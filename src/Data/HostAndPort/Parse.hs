@@ -22,6 +22,12 @@ module Data.HostAndPort.Parse
     , parseConnect
 
     --
+    , modifyHostAndPortWith
+    , hostPreference
+    , invalidPortNumber
+    , invalidHostName
+
+    --
     , parseIp
     , parseIpv6
     , parseIpv4
@@ -30,13 +36,13 @@ module Data.HostAndPort.Parse
     )
   where
 
-import Control.Applicative ((<*>), (<|>))
+import Control.Applicative ((<*>), (<|>), pure)
 import Control.Monad ((>=>))
 import Data.Bool (otherwise)
 import Data.Either (Either(Left, Right), either)
 import Data.Eq (Eq, (==))
-import Data.Function (($), (.), const)
-import Data.Functor (Functor, (<$>))
+import Data.Function (($), (.), const, id)
+import Data.Functor (Functor, (<$>), fmap)
 import qualified Data.List as List (break, drop)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Ord ((>))
@@ -48,7 +54,12 @@ import Text.Read (readMaybe)
 import Text.Show (Show, show)
 
 import Data.IP (IP(IPv4, IPv6))
+import Data.Streaming.Network.Internal
+    ( HostPreference(Host, HostAny, HostIPv4Only)
+    )
 import Text.Hostname (validHostname)
+
+import Data.HostAndPort.Class (HasHost, HasPort, Host, Port, setHost, setPort)
 
 
 data ParsedHost s
@@ -166,6 +177,61 @@ parseHostName :: String -> Either String String
 parseHostName s
   | validHostname (fromString s) = Right s
   | otherwise                    = invalidHostName $ show s
+
+-- | Interpret result of 'parseListen' or 'parseConnect' as modification of a
+-- data type @a :: *@. Value 'Nothing' is interpreted as no change (i.e.
+-- identity).
+--
+-- Usage examples:
+--
+-- @
+-- 'parseListen' '>=>' 'modifyHostAndPortWith' convertHost convertPort
+--     :: ('Host' a ~ host, 'Port' a ~ port, 'HasHost' a, 'HasPort' a)
+--     => 'String'
+--     -> 'Either' 'String' (a -> a)
+-- @
+modifyHostAndPortWith
+    :: (Host a ~ host, Port a ~ port, HasHost a, HasPort a)
+    => (ParsedHost String -> Either String host)
+    -- ^ Convert 'ParsedHost' into @host :: *@ or fail with an error message.
+    -> (Word -> Either String port)
+    -- ^ Convert 'Word' into @port :: *@ or fail with an error message.
+    -> (Maybe (ParsedHost String), Maybe Word)
+    -- ^ Result of either 'parseListen' or 'parseConnect'.
+    -> Either String (a -> a)
+    -- ^ Either failed with an error message or returned a function that will
+    -- set host and port in the type @a :: *@.
+modifyHostAndPortWith convertHost convertPort (possiblyHost, possiblyPort) =
+    (.) <$> (setHost `after` convertHost) possiblyHost
+        <*> (setPort `after` convertPort) possiblyPort
+  where
+    after setter f = maybe (pure id) (fmap setter . f)
+
+-- | Interpret @'ParsedHost' 'String'@ as a listening preference
+-- ('HostPreference') as used by "Data.Streaming.Network".
+--
+-- Interpretation of 'ParsedHost' is:
+--
+-- @
+-- \\case
+--     -- Listen on all interfaces, but IPv4 only.
+--     'IpAddress' \"0.0.0.0\" -> 'fromString' \"!4\"
+--
+--     -- Listen on all interfaces, both IPv4 and IPv6.
+--     'IpAddress' \"::\"      -> 'fromString' \"*\"
+--
+--     -- Listen only on specified interface.
+--     'IpAddress' ip        -> 'fromString' ('show' ip)
+--     'HostName' name       -> 'fromString' name
+-- @
+--
+-- For more details see documentation of 'HostPreference'.
+hostPreference :: ParsedHost String -> HostPreference
+hostPreference = \case
+    IpAddress "0.0.0.0" -> HostIPv4Only
+    IpAddress "::"      -> HostAny
+    IpAddress ip        -> Host (show ip)
+    HostName hostName   -> Host hostName
 
 -- | Fail on inalid port number.
 --

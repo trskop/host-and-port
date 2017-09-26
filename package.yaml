@@ -1,0 +1,42 @@
+name: host-and-port
+version: 0.0.1.0
+synopsis: TODO
+description: TODO
+maintainer: Peter Trško <peter.trsko@gmail.com>
+license: BSD3
+github: trskop/host-and-port
+category: Data
+
+extra-source-files:
+  - ChangeLog.md
+  - README.md
+
+ghc-options: -Wall -Wmissing-import-lists
+
+dependencies:
+  - base >=4.7 && <5
+  - streaming-commons
+  - iproute
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Data.HostAndPort
+    - Data.HostAndPort.Class
+    - Data.HostAndPort.Parse
+    - Data.HostAndPort.Type
+
+# tests:
+  # spec:
+    # cpp-options: -DTEST
+    # main: Spec.hs
+    # source-dirs:
+      # - test
+      # - src
+    # dependencies:
+      # - hspec == 2.*
+      # - QuickCheck
+      # - temporary
+      # - mockery >= 0.3
+      # - interpolate
+      # - aeson-qq

@@ -34,6 +34,7 @@ module Data.HostAndPort.Parse
     , parseIpv6
     , parseIpv4
     , parseHostName
+    , parseHost
     , parsePort
     )
   where
@@ -103,7 +104,7 @@ parseListen = \case
     -- (HOST_NAME | IP_ADDR) (":" PORT)? | ":" PORT
     s ->
         let (s1, s2) = List.break (== ':') s
-        in (,) <$> parseHost s1 <*> parsePort' s2
+        in (,) <$> parseHost' s1 <*> parsePort' s2
   where
     parsePort' = \case
         ""      -> Right Nothing
@@ -112,16 +113,7 @@ parseListen = \case
             -- This is an indication of a bug in code that is calling
             -- parsePort'.
 
-    parseHost s =
-        maybe (Left notAHostName) (Right . Just) $ parseIp' <|> parseHostName'
-      where
-        notAHostName = "Neither host name nor IP address: " <> show s
-
-        parseIp' = either (const Nothing) (Just . IpAddress) $ parseIp s
-
-        parseHostName' =
-            either (const Nothing) (Just . HostName) $ parseHostName s
-
+    parseHost' s = Just <$> parseHost s
     parseIpv6' s = Just . IpAddress <$> parseIpv6 s
 
 -- | Same as 'parseListen', but:
@@ -185,6 +177,18 @@ parseHostName :: String -> Either String String
 parseHostName s
   | validHostname (fromString s) = Right s
   | otherwise                    = invalidHostName $ show s
+
+-- | Parse host name or IP address, this includes @::@ and @0.0.0.0@.
+parseHost :: String -> Either String (ParsedHost String)
+parseHost s =
+    maybe (Left notAHostName) Right $ parseIp' <|> parseHostName'
+  where
+    notAHostName = "Neither host name nor IP address: " <> show s
+
+    parseIp' = either (const Nothing) (Just . IpAddress) $ parseIp s
+
+    parseHostName' =
+        either (const Nothing) (Just . HostName) $ parseHostName s
 
 -- }}} Simple Parsers ---------------------------------------------------------
 

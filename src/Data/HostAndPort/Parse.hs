@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Data.HostAndPort.Parse
--- Description: Parse string into host and port pair.
+-- Description: Parse String into host and port pair.
 -- Copyright:   (c) 2017 Peter Trško
 -- License:     BSD3
 --
@@ -15,19 +15,21 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- Parse string into host and port pair.
+-- Parse 'String' into host and port pair.
 module Data.HostAndPort.Parse
-    ( ParsedHost(..)
+    (
+    -- * Parse Host and Port
+      ParsedHost(..)
     , parseListen
     , parseConnect
 
-    --
+    -- * Utilities
     , modifyHostAndPortWith
     , hostPreference
     , invalidPortNumber
     , invalidHostName
 
-    --
+    -- * Simpler Parsers
     , parseIp
     , parseIpv6
     , parseIpv4
@@ -62,9 +64,12 @@ import Text.Hostname (validHostname)
 import Data.HostAndPort.Class (HasHost, HasPort, Host, Port, setHost, setPort)
 
 
+-- | Hots are specified either by their 'IpAddress' or by their 'HostName'.
 data ParsedHost s
     = HostName s
+    -- ^ Host name as defined by <https://tools.ietf.org/html/rfc1123 RFC 1123>.
     | IpAddress IP
+    -- ^ IPv4 or IPv6 address.
   deriving (Eq, Functor, Generic, Generic1, Show)
 
 -- | Parse string in the form of either @HOST[:PORT]@ or @[HOST]:PORT@. In
@@ -95,20 +100,18 @@ parseListen = \case
     -- ":" PORT
     s@(':' : _) -> (Nothing, ) <$> parsePort' s
 
-    -- HOST (":" PORT)? | ":" PORT
+    -- (HOST_NAME | IP_ADDR) (":" PORT)? | ":" PORT
     s ->
         let (s1, s2) = List.break (== ':') s
         in (,) <$> parseHost s1 <*> parsePort' s2
   where
-    parsePort' :: String -> Either String (Maybe Word)
     parsePort' = \case
-        "" -> Right Nothing
+        ""      -> Right Nothing
         ':' : s -> Just <$> parsePort s
-        s -> Left $ "Expected :PORT, but got: " <> show s
+        s       -> Left $ "Expected :PORT, but got: " <> show s
             -- This is an indication of a bug in code that is calling
             -- parsePort'.
 
-    parseHost :: String -> Either String (Maybe (ParsedHost String))
     parseHost s =
         maybe (Left notAHostName) (Right . Just) $ parseIp' <|> parseHostName'
       where
@@ -145,6 +148,8 @@ parseConnect = parseListen >=> onlyValidIp >=> onlyValidPort
 
     invalidAddress n v = Left $ "Invalid IPv" <> n <> " address: " <> show v
 
+-- {{{ Simple Parsers ---------------------------------------------------------
+
 -- | Parse port number, i.e. value in range @[0, 65535]@.
 parsePort :: String -> Either String Word
 parsePort s = maybe (Left notAPortNumber) validatePortNumber $ readMaybe s
@@ -155,17 +160,20 @@ parsePort s = maybe (Left notAPortNumber) validatePortNumber $ readMaybe s
       | p > 65535 = invalidPortNumber "Values higher than 65535 aren't allowed"
       | otherwise = Right p
 
+-- | Parse 'IP' address, either IPv4 or IPv6.
 parseIp :: String -> Either String IP
 parseIp s = maybe (Left notIpAddr) Right $ readMaybe s
   where
     notIpAddr = "Not an IP address: " <> show s
 
+-- | Parse IPv6 address only.
 parseIpv6 :: String -> Either String IP
 parseIpv6 "*" = Right "::"
 parseIpv6 s   = maybe (Left notIpv6Addr) (Right . IPv6) $ readMaybe s
   where
     notIpv6Addr = "Not an IPv6 addres: " <> show s
 
+-- | Parse IPv4 address only.
 parseIpv4 :: String -> Either String IP
 parseIpv4 s = maybe (Left notIpv4Addr) (Right . IPv4) $ readMaybe s
   where
@@ -177,6 +185,10 @@ parseHostName :: String -> Either String String
 parseHostName s
   | validHostname (fromString s) = Right s
   | otherwise                    = invalidHostName $ show s
+
+-- }}} Simple Parsers ---------------------------------------------------------
+
+-- {{{ Utilities --------------------------------------------------------------
 
 -- | Interpret result of 'parseListen' or 'parseConnect' as modification of a
 -- data type @a :: *@. Value 'Nothing' is interpreted as no change (i.e.
@@ -246,3 +258,5 @@ invalidPortNumber msg = Left $ "Invalid port number: " <> msg
 -- Left "Invalid port number: \"example.com\" is reserved for example code."
 invalidHostName :: String -> Either String a
 invalidHostName msg = Left $ "Invalid host name: " <> msg
+
+-- }}} Utilities --------------------------------------------------------------

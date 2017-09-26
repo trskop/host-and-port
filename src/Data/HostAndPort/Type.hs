@@ -12,8 +12,8 @@
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Data.HostAndPort.Type
--- Description: Host and port used for connecting to server or listening for
---              client connections.
+-- Description: Data type representing host and port pair used for connecting
+--              to server or listening for client connections.
 -- Copyright:   (c) 2017 Peter Trško
 -- License:     BSD3
 --
@@ -21,14 +21,14 @@
 -- Stability:   experimental
 -- Portability: GHC specific language extensions.
 --
--- Host and port used for connecting to server or listening for client
--- connections.
+-- Data type representing host and port pair used for connecting to server or
+-- listening for client connections.
 module Data.HostAndPort.Type
     (
     -- * Host and Port
       HostAndPort(..)
 
-    -- * Listen or Connect
+    -- * Listen and Connect
     , ListenOrConnect(..)
     , genericShowsPrec
 
@@ -78,21 +78,98 @@ data ListenOrConnect
     -- ^ Connect to server.
   deriving (Bounded, Enum, Eq, Generic, Show, Read)
 
-type ListenFor (t :: k) host port = HostAndPort 'Listen t host port
-type ConnectTo (t :: k) host port = HostAndPort 'Connect t host port
+-- | Host and port pair used on the server side when binding port on which it
+-- will listen for connections. Type @t :: k@ is a phantom type used to
+-- indicate service\/api name so that multiple services\/apis can coexist in
+-- one application.
+--
+-- Usage example:
+--
+-- @
+-- type ListenFileApi =
+--     'ListenFor' \"file-api\" 'Data.Streaming.Network.HostPreference' 'Int'
+-- @
+type ListenFor = HostAndPort 'Listen
 
+-- | Host and port pair used on the client side when connectiong to a server
+-- which provides service\/API on specified host and port. Type @t :: k@ is a
+-- phantom type used to indicate service\/api name so that multiple clients can
+-- coexist in one application.
+--
+-- Usage example:
+--
+-- @
+-- type ConnectFileApi =
+--     'ConnectTo' \"file-api\" 'Data.ByteString.ByteString' 'Int'
+-- @
+type ConnectTo = HostAndPort 'Connect
+
+-- | Behaves as a record data constructor for 'ListenFor' type.
+--
+-- Usage examples:
+--
+-- @
+-- defaultListenFileApi :: ListenFileApi
+-- defaultListenFileApi = 'ListenTo'
+--     { 'listenHost' = \"example.com\"
+--     , 'listenPort' = 12345
+--     }
+--
+-- connectToFileApi
+--     :: ListenFileApi
+--     -> ('Data.Streaming.Network.AppData' -> 'System.IO.IO' ())
+--     -> 'System.IO.IO' a
+-- connectToFileApi 'ListenFor'{..} = 'Data.Streaming.Network.runTCPServer' cfg
+--   where
+--     cfg = 'Data.Streaming.Network.serverSettingsTCP' 'listenPort' 'listenHost'
+--
+-- @
 pattern ListenFor :: host -> port -> ListenFor (t :: k) host port
 pattern ListenFor{listenHost, listenPort} = HostAndPort
     { _host = listenHost
     , _port = listenPort
     }
 
+-- | Behaves as a record data constructor for 'ConnectTo' type.
+--
+-- Usage examples:
+--
+-- @
+-- defaultConnectFileApi :: ConnectFileApi
+-- defaultConnectFileApi = 'ConnectTo'
+--     { 'connectHost' = \"example.com\"
+--     , 'connectPort' = 12345
+--     }
+--
+-- connectToFileApi
+--     :: ConnectFileApi
+--     -> ('Data.Streaming.Network.AppData' -> 'System.IO.IO' a)
+--     -> 'System.IO.IO' a
+-- connectToFileApi 'ConnectTo'{..} = 'Data.Streaming.Network.runTCPClient' cfg
+--   where
+--     cfg = 'Data.Streaming.Network.clientSettingsTCP' 'connectPort' 'connectHost'
+-- @
 pattern ConnectTo :: host -> port -> ConnectTo t host port
 pattern ConnectTo{connectHost, connectPort} = HostAndPort
     { _host = connectHost
     , _port = connectPort
     }
 
+-- | Data type that represents pair @(host, port)@ which uses two additional
+-- poly-kinded phantom types @t1 :: k1@ and @t2 :: k2@, which have following
+-- meaning:
+--
+-- * @t1 :: k1@ - specifies connection side, e.g. 'Listen' (server, see
+--   'ListenFor') or 'Connect' (client, see 'ConnectTo').
+--
+-- * @t2 :: k2@ - specifies protocol\/API which is available on that host and
+--   port.
+--
+-- There are also specialised type aliases:
+--
+-- * @'ListenFor' = 'HostAndPort' ''Listen'@
+--
+-- * @'ConnectTo' = 'HostAndPort' ''Connect'@
 data HostAndPort (t1 :: k1) (t2 :: k2) host port = HostAndPort
     { _host :: host
     , _port :: port
@@ -115,10 +192,14 @@ instance
     showsPrec = genericShowsPrec "ConnectTo"
     {-# INLINEABLE showsPrec #-}
 
+-- | Generic implementation of 'showsPrec' for various 'Show' instances for
+-- 'HostAndPort' data type.
 genericShowsPrec
     :: forall host port t1 t2
     .  (Show host, Show port, Typeable t2)
     => String
+    -- ^ Data constructor name or pattern synonym that can take on role of data
+    -- constructor.
     -> Int
     -> HostAndPort t1 t2 host port
     -> ShowS

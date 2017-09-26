@@ -1,7 +1,19 @@
 name: host-and-port
 version: 0.0.1.0
-synopsis: TODO
-description: TODO
+synopsis: Data type and utilities for handling host name and port number pairs
+description: |
+  This package provides:
+
+  * Generic data type for storing host name and port number that uses phantom
+    types to distinguish between server\/client, and various
+    protocols\/services\/APIs.
+
+  * Type classes for accessing host name and port number in a data type using
+    lenses.
+
+  * Generic parsing of host name and port number from e.g. command line
+    arguments.
+
 maintainer: Peter Trško <peter.trsko@gmail.com>
 license: BSD3
 github: trskop/host-and-port

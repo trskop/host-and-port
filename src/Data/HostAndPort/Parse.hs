@@ -41,10 +41,10 @@ import qualified Data.List as List (break, drop)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Semigroup ((<>))
 import Data.String (String)
-import Data.Word (Word64)
+import Data.Word (Word)
 import GHC.Generics (Generic, Generic1)
-import Text.Show (Show, show)
 import Text.Read (readMaybe)
+import Text.Show (Show, show)
 
 import Data.IP (IP(IPv4, IPv6))
 
@@ -66,7 +66,7 @@ data ParsedHost s
 -- * Valid hostname, e.g. @\"example.com\"@.
 parseListen
     :: String
-    -> Either String (Maybe (ParsedHost String), Maybe Word64)
+    -> Either String (Maybe (ParsedHost String), Maybe Word)
 parseListen = \case
     "" -> Left "Expected HOST:PORT, or HOST, or :PORT."
 
@@ -86,7 +86,7 @@ parseListen = \case
         let (s1, s2) = List.break (== ':') s
         in (,) <$> parseHost s1 <*> parsePort' s2
   where
-    parsePort' :: String -> Either String (Maybe Word64)
+    parsePort' :: String -> Either String (Maybe Word)
     parsePort' = \case
         "" -> Right Nothing
         ':' : s -> Just <$> parsePort s
@@ -111,7 +111,7 @@ parseListen = \case
 -- @0.0.0.0@.
 parseConnect
     :: String
-    -> Either String (Maybe (ParsedHost String), Maybe Word64)
+    -> Either String (Maybe (ParsedHost String), Maybe Word)
 parseConnect = parseListen >=> onlyValidIp
   where
     onlyValidIp = \case
@@ -123,7 +123,7 @@ parseConnect = parseListen >=> onlyValidIp
 
     invalidAddress n v = Left $ "Invalid IPv" <> n <> " address: " <> show v
 
-parsePort :: String -> Either String Word64
+parsePort :: String -> Either String Word
 parsePort s = maybe (Left notAPortNumber) Right $ readMaybe s
   where
     notAPortNumber = "Not a port number: " <> show s

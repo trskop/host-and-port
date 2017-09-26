@@ -30,6 +30,7 @@ module Data.HostAndPort.Type
 
     -- * Listen or Connect
     , ListenOrConnect(..)
+    , genericShowsPrec
 
     -- ** Listen
     , ListenFor
@@ -53,9 +54,10 @@ import Data.Functor (Functor, fmap)
 import Data.Int (Int)
 import Data.Ord ((>))
 import Data.Proxy (Proxy(Proxy))
+import Data.String (String)
 import Data.Typeable (Typeable, typeRep, showsTypeRep)
 import GHC.Generics (Generic)
-import Text.Show (Show(showsPrec), showChar, showParen, showString)
+import Text.Show (Show(showsPrec), ShowS, showChar, showParen, showString)
 import Text.Read (Read)
 
 import qualified Data.Streaming.Network as Streaming (HasPort(portLens))
@@ -97,19 +99,37 @@ data HostAndPort (t1 :: k1) (t2 :: k2) host port = HostAndPort
     }
   deriving (Generic)
 
+-- | @instance (Show host, Show port, Typeable t) => 'ListenFor' t host port@
 instance
     ( Show host, Show port, Typeable t
     ) => Show (HostAndPort 'Listen t host port)
   where
-    showsPrec d HostAndPort{..} = showParen (d > appPrecedence)
-        $ showString "ListenFor @" . showsTypeRep (typeRep (Proxy @t))
-        . showChar ' '
-        . showsPrec (appPrecedence + 1) _host
-        . showChar ' '
-        . showsPrec (appPrecedence + 1) _port
-      where
-        appPrecedence = 10
+    showsPrec = genericShowsPrec "ListenFor"
     {-# INLINEABLE showsPrec #-}
+
+-- | @instance (Show host, Show port, Typeable t) => 'ConnectTo' t host port@
+instance
+    ( Show host, Show port, Typeable t
+    ) => Show (HostAndPort 'Connect t host port)
+  where
+    showsPrec = genericShowsPrec "ConnectTo"
+    {-# INLINEABLE showsPrec #-}
+
+genericShowsPrec
+    :: forall host port t1 t2
+    .  (Show host, Show port, Typeable t2)
+    => String
+    -> Int
+    -> HostAndPort t1 t2 host port
+    -> ShowS
+genericShowsPrec typeName d HostAndPort{..} = showParen (d > appPrecedence)
+    $ showString typeName
+    . showString " @" . showsTypeRep (typeRep (Proxy @t2))
+    . showChar ' ' . showsPrec (appPrecedence + 1) _host
+    . showChar ' ' . showsPrec (appPrecedence + 1) _port
+  where
+    appPrecedence = 10
+{-# INLINE genericShowsPrec #-}
 
 instance Class.HasHost (HostAndPort t1 t2 host port) where
     type Host (HostAndPort t1 t2 host port) = host

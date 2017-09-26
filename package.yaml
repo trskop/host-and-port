@@ -27,8 +27,9 @@ ghc-options: -Wall -Wmissing-import-lists
 
 dependencies:
   - base >=4.7 && <5
-  - streaming-commons
+  - hostname-validate
   - iproute
+  - streaming-commons
 
 library:
   source-dirs: src

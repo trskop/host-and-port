@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -8,13 +9,12 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Data.HostAndPort.Type
 -- Description: Data type representing host and port pair used for connecting
 --              to server or listening for client connections.
--- Copyright:   (c) 2017 Peter Trško
+-- Copyright:   (c) 2017-2018 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -27,10 +27,12 @@ module Data.HostAndPort.Type
     (
     -- * Host and Port
       HostAndPort(..)
+    , eqHostAndPortWith
+    , compareHostAndPortWith
+    , showsPrecHostAndPortWith
 
     -- * Listen and Connect
     , ListenOrConnect(..)
-    , genericShowsPrec
 
     -- ** Listen
     , ListenFor
@@ -46,15 +48,22 @@ module Data.HostAndPort.Type
     )
   where
 
-import Prelude (Bounded, Enum, (+))
+import Prelude (Bounded, Enum)
 
+import Data.Bool (Bool, (&&))
 import Data.Eq (Eq)
 import Data.Function (($), (.), flip)
 import Data.Functor (Functor, fmap)
+#ifdef HAVE_DATA_FUNCTOR_CLASSES
+import Data.Functor.Classes
+    ( Eq2(liftEq2)
+    , Ord2(liftCompare2)
+    , Show2(liftShowsPrec2)
+    )
+#endif
 import Data.Int (Int)
-import Data.Ord ((>))
+import Data.Ord (Ordering(EQ), (>=))
 import Data.Proxy (Proxy(Proxy))
-import Data.String (String)
 import Data.Typeable (Typeable, typeRep, showsTypeRep)
 import GHC.Generics (Generic)
 import Text.Show (Show(showsPrec), ShowS, showChar, showParen, showString)
@@ -156,13 +165,13 @@ pattern ConnectTo{connectHost, connectPort} = HostAndPort
     }
 
 -- | Data type that represents pair @(host, port)@ which uses two additional
--- poly-kinded phantom types @t1 :: k1@ and @t2 :: k2@, which have following
--- meaning:
+-- poly-kinded phantom types @tag1 :: k1@ and @tag2 :: k2@, which have
+-- following meaning:
 --
--- * @t1 :: k1@ - specifies connection side, e.g. 'Listen' (server, see
+-- * @tag1 :: k1@ - specifies connection side, e.g. 'Listen' (server, see
 --   'ListenFor') or 'Connect' (client, see 'ConnectTo').
 --
--- * @t2 :: k2@ - specifies protocol\/API which is available on that host and
+-- * @tag2 :: k2@ - specifies protocol\/API which is available on that host and
 --   port.
 --
 -- There are also specialised type aliases:
@@ -170,47 +179,102 @@ pattern ConnectTo{connectHost, connectPort} = HostAndPort
 -- * @'ListenFor' = 'HostAndPort' ''Listen'@
 --
 -- * @'ConnectTo' = 'HostAndPort' ''Connect'@
-data HostAndPort (t1 :: k1) (t2 :: k2) host port = HostAndPort
+data HostAndPort (tag1 :: k1) (tag2 :: k2) host port = HostAndPort
     { _host :: host
     , _port :: port
     }
   deriving (Generic)
 
--- | @instance (Show host, Show port, Typeable t) => 'ListenFor' t host port@
+-- |
+-- @
+-- instance (Show host, Show port, Typeable tag) => 'ListenFor' tag host port
+-- @
 instance
-    ( Show host, Show port, Typeable t
-    ) => Show (HostAndPort 'Listen t host port)
+    ( Show host, Show port, Typeable tag
+    ) => Show (HostAndPort 'Listen tag host port)
   where
-    showsPrec = genericShowsPrec "ListenFor"
+    showsPrec = showsPrecHostAndPortWith showTypeName showsPrec showsPrec
+      where
+        showTypeName _ tag =
+            showString "ListenFor @" . showsTypeRep (typeRep tag)
     {-# INLINEABLE showsPrec #-}
 
--- | @instance (Show host, Show port, Typeable t) => 'ConnectTo' t host port@
+-- |
+-- @
+-- instance (Show host, Show port, Typeable tag) => 'ConnectTo' tag host port
+-- @
 instance
-    ( Show host, Show port, Typeable t
-    ) => Show (HostAndPort 'Connect t host port)
+    ( Show host, Show port, Typeable tag
+    ) => Show (HostAndPort 'Connect tag host port)
   where
-    showsPrec = genericShowsPrec "ConnectTo"
+    showsPrec = showsPrecHostAndPortWith showTypeName showsPrec showsPrec
+      where
+        showTypeName _ tag =
+            showString "ConnectTo @" . showsTypeRep (typeRep tag)
     {-# INLINEABLE showsPrec #-}
 
--- | Generic implementation of 'showsPrec' for various 'Show' instances for
--- 'HostAndPort' data type.
-genericShowsPrec
-    :: forall host port t1 t2
-    .  (Show host, Show port, Typeable t2)
-    => String
-    -- ^ Data constructor name or pattern synonym that can take on role of data
-    -- constructor.
+#ifdef HAVE_DATA_FUNCTOR_CLASSES
+instance (Typeable tag1, Typeable tag2) => Show2 (HostAndPort tag1 tag2) where
+    liftShowsPrec2 showsPrecHost _ showsPrecPort _ =
+        showsPrecHostAndPortWith showTypeName showsPrecHost showsPrecPort
+      where
+        showTypeName tag1 tag2 = showString "HostAndPort"
+            . showString " @" . showsTypeRep (typeRep tag1)
+            . showString " @" . showsTypeRep (typeRep tag2)
+    {-# INLINEABLE liftShowsPrec2 #-}
+
+instance Eq2 (HostAndPort tag1 tag2) where
+    liftEq2 = eqHostAndPortWith
+    {-# INLINE liftEq2 #-}
+
+instance Ord2 (HostAndPort tag1 tag2) where
+    liftCompare2 = compareHostAndPortWith
+    {-# INLINE liftCompare2 #-}
+#endif
+
+showsPrecHostAndPortWith
+    :: forall host port tag1 tag2
+    .  (Proxy tag1 -> Proxy tag2 -> ShowS)
+    -> (Int -> host -> ShowS)
+    -> (Int -> port -> ShowS)
     -> Int
-    -> HostAndPort t1 t2 host port
+    -> HostAndPort tag1 tag2 host port
     -> ShowS
-genericShowsPrec typeName d HostAndPort{..} = showParen (d > appPrecedence)
-    $ showString typeName
-    . showString " @" . showsTypeRep (typeRep (Proxy @t2))
-    . showChar ' ' . showsPrec (appPrecedence + 1) _host
-    . showChar ' ' . showsPrec (appPrecedence + 1) _port
+showsPrecHostAndPortWith showsPrecTypeName showsPrecHost showsPrecPort d
+  HostAndPort{..} =
+    showParen (d >= appPrecedence)
+        $ showsPrecTypeName Proxy Proxy
+        . showChar ' ' . showsPrecHost appPrecedence _host
+        . showChar ' ' . showsPrecPort appPrecedence _port
   where
-    appPrecedence = 10
-{-# INLINE genericShowsPrec #-}
+    appPrecedence = 11
+{-# INLINEABLE showsPrecHostAndPortWith #-}
+
+eqHostAndPortWith
+    :: (host1 -> host2 -> Bool)
+    -> (port1 -> port2 -> Bool)
+    -> HostAndPort tag1 tag2 host1 port1
+    -> HostAndPort tag1 tag2 host2 port2
+    -> Bool
+eqHostAndPortWith eqHosts eqPorts
+  HostAndPort{_host = host1, _port = port1}
+  HostAndPort{_host = host2, _port = port2} =
+    eqHosts host1 host2 && eqPorts port1 port2
+{-# INLINEABLE eqHostAndPortWith #-}
+
+compareHostAndPortWith
+    :: (host1 -> host2 -> Ordering)
+    -> (port1 -> port2 -> Ordering)
+    -> HostAndPort tag1 tag2 host1 port1
+    -> HostAndPort tag1 tag2 host2 port2
+    -> Ordering
+compareHostAndPortWith compareHosts comparePorts
+  HostAndPort{_host = host1, _port = port1}
+  HostAndPort{_host = host2, _port = port2} =
+    case compareHosts host1 host2 of
+        EQ -> comparePorts port1 port2
+        r -> r
+{-# INLINEABLE compareHostAndPortWith #-}
 
 instance Class.HasHost (HostAndPort t1 t2 host port) where
     type Host (HostAndPort t1 t2 host port) = host

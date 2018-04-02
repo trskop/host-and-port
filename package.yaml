@@ -14,6 +14,7 @@ description: |
   * Generic parsing of host name and port number from e.g. command line
     arguments.
 
+copyright: (c) 2017-2018 Peter Trško
 maintainer: Peter Trško <peter.trsko@gmail.com>
 license: BSD3
 github: trskop/host-and-port
@@ -23,7 +24,21 @@ extra-source-files:
   - ChangeLog.md
   - README.md
 
-ghc-options: -Wall -Wmissing-import-lists
+ghc-options:
+  - -Wall
+
+when:
+  - condition: impl(ghc >=8)
+    then:
+      ghc-options:
+        - -Wimplicit-prelude
+        - -Wmissing-import-lists
+      cpp-options:
+        - -DHAVE_DATA_FUNCTOR_CLASSES
+    else:
+      ghc-options:
+        - -fwarn-implicit-prelude
+        - -fwarn-missing-import-lists
 
 dependencies:
   - base >=4.7 && <5

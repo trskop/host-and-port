@@ -186,8 +186,8 @@ pattern ConnectTo{connectHost, connectPort} = HostAndPort
 --
 -- * @'ConnectTo' = 'HostAndPort' ''Connect'@
 data HostAndPort (tag1 :: k1) (tag2 :: k2) host port = HostAndPort
-    { _host :: host
-    , _port :: port
+    { _host :: !host
+    , _port :: !port
     }
   deriving (Generic)
 

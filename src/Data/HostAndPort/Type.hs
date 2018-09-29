@@ -241,6 +241,18 @@ instance Ord2 (HostAndPort tag1 tag2) where
 showsPrecHostAndPortWith
     :: forall host port tag1 tag2
     .  (Proxy tag1 -> Proxy tag2 -> ShowS)
+    -- ^ Function for \"showing\" type.  For example:
+    --
+    -- @
+    -- showTypeName
+    --     :: ('Typeable' tag1, 'Typeable' tag2)
+    --     => 'Proxy' tag1
+    --     -> 'Proxy' tag2
+    --     -> 'ShowS'
+    -- showTypeName tag1 tag2 = 'showString' \"HostAndPort\"
+    --     . 'showString' \" \@\" . 'showsTypeRep' ('typeRep' tag1)
+    --     . 'showString' \" \@\" . 'showsTypeRep' ('typeRep' tag2)
+    -- @
     -> (Int -> host -> ShowS)
     -> (Int -> port -> ShowS)
     -> Int
@@ -268,6 +280,7 @@ eqHostAndPortWith eqHosts eqPorts
     eqHosts host1 host2 && eqPorts port1 port2
 {-# INLINEABLE eqHostAndPortWith #-}
 
+-- | Hostname is considered to be more significant than port number.
 compareHostAndPortWith
     :: (host1 -> host2 -> Ordering)
     -> (port1 -> port2 -> Ordering)

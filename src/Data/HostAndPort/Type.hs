@@ -10,6 +10,12 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+
+#ifdef DHALL
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+#endif
+
 -- |
 -- Module:      Data.HostAndPort.Type
 -- Description: Data type representing host and port pair used for connecting
@@ -45,20 +51,40 @@ module Data.HostAndPort.Type
     , pattern ConnectTo
     , connectHost
     , connectPort
+
+    -- ** Dhall
+#ifdef DHALL
+    , HostOrPortField(..)
+    , hostAndPort
+    , listenOn
+    , connectTo
+#else
+    -- | Dhall support is currently turned on, recompile with @dhall@
+    -- compilation option enabled.
+#endif
     )
   where
 
 import Prelude (Bounded, Enum)
 
+import Control.Applicative ((<*>))
 import Data.Bool (Bool, (&&))
 import Data.Eq (Eq)
-import Data.Function (($), (.), flip)
-import Data.Functor
-    ( Functor
-#if MIN_VERSION_base(4,11,0)
-    , (<&>)
+import Data.Function
+    ( ($)
+    , (.)
+#if !MIN_VERSION_base(4,11,0)
+    , flip
 #endif
+    )
+import Data.Functor
+#if MIN_VERSION_base(4,11,0)
+    ( (<&>)
+#else
+    ( Functor
     , fmap
+#endif
+    , (<$>)
     )
 #ifdef HAVE_DATA_FUNCTOR_CLASSES
 import Data.Functor.Classes
@@ -75,7 +101,12 @@ import GHC.Generics (Generic)
 import Text.Show (Show(showsPrec), ShowS, showChar, showParen, showString)
 import Text.Read (Read)
 
+#ifdef DHALL
+import qualified Dhall (Type, field, record)
+#endif
+
 import qualified Data.Streaming.Network as Streaming (HasPort(portLens))
+import Data.Text (Text)
 
 import qualified Data.HostAndPort.Class as Class
     ( HasHost(Host, host)
@@ -313,4 +344,47 @@ instance (port ~ Int) => Streaming.HasPort (HostAndPort t1 t2 host port) where
 (<&>) :: Functor f => f a -> (a -> b) -> f b
 (<&>) = flip fmap
 {-# INLINE (<&>) #-}
+#endif
+
+#ifdef DHALL
+data HostOrPortField = HostField | PortField
+  deriving (Eq, Generic, Show)
+
+interpretDhall
+    :: forall tag1 tag2 host port
+    .  (HostOrPortField -> Text)
+    -> Dhall.Type host
+    -> Dhall.Type port
+    -> Dhall.Type (HostAndPort tag1 tag2 host port)
+interpretDhall fieldName hostType portType = Dhall.record
+    $ HostAndPort
+        <$> Dhall.field (fieldName HostField) hostType
+        <*> Dhall.field (fieldName PortField) portType
+
+hostAndPort
+    :: forall tag1 tag2 host port
+    .  Dhall.Type host
+    -> Dhall.Type port
+    -> Dhall.Type (HostAndPort tag1 tag2 host port)
+hostAndPort = interpretDhall $ \case
+    HostField -> "host"
+    PortField -> "port"
+
+listenOn
+    :: forall tag host port
+    .  Dhall.Type host
+    -> Dhall.Type port
+    -> Dhall.Type (HostAndPort 'Listen tag host port)
+listenOn = interpretDhall $ \case
+    HostField -> "listenHost"
+    PortField -> "listenPort"
+
+connectTo
+    :: forall tag host port
+    .  Dhall.Type host
+    -> Dhall.Type port
+    -> Dhall.Type (HostAndPort 'Connect tag host port)
+connectTo = interpretDhall $ \case
+    HostField -> "connectHost"
+    PortField -> "connectPort"
 #endif

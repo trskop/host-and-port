@@ -27,6 +27,12 @@ extra-source-files:
 ghc-options:
   - -Wall
 
+flags:
+  dhall:
+    description: todo
+    manual: false
+    default: false
+
 when:
   - condition: impl(ghc >=8)
     then:
@@ -40,11 +46,19 @@ when:
         - -fwarn-implicit-prelude
         - -fwarn-missing-import-lists
 
+  - condition: flag(dhall)
+    dependencies:
+      # TODO: Bounds
+      - dhall
+    cpp-options:
+      -DDHALL
+
 dependencies:
   - base >=4.7 && <5
   - hostname-validate
   - iproute
   - streaming-commons
+  - text
 
 library:
   source-dirs: src

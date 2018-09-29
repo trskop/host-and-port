@@ -53,7 +53,13 @@ import Prelude (Bounded, Enum)
 import Data.Bool (Bool, (&&))
 import Data.Eq (Eq)
 import Data.Function (($), (.), flip)
-import Data.Functor (Functor, fmap)
+import Data.Functor
+    ( Functor
+#if MIN_VERSION_base(4,11,0)
+    , (<&>)
+#endif
+    , fmap
+    )
 #ifdef HAVE_DATA_FUNCTOR_CLASSES
 import Data.Functor.Classes
     ( Eq2(liftEq2)
@@ -290,6 +296,8 @@ instance (port ~ Int) => Streaming.HasPort (HostAndPort t1 t2 host port) where
     portLens = Class.port
     {-# INLINE portLens #-}
 
+#if !MIN_VERSION_base(4,11,0)
 (<&>) :: Functor f => f a -> (a -> b) -> f b
 (<&>) = flip fmap
 {-# INLINE (<&>) #-}
+#endif

@@ -7,7 +7,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -172,8 +171,8 @@ type ConnectTo = HostAndPort 'Connect
 -- @
 pattern ListenFor :: host -> port -> ListenFor (t :: k) host port
 pattern ListenFor{listenHost, listenPort} = HostAndPort
-    { _host = listenHost
-    , _port = listenPort
+    { host = listenHost
+    , port = listenPort
     }
 
 -- | Behaves as a record data constructor for 'ConnectTo' type.
@@ -197,8 +196,8 @@ pattern ListenFor{listenHost, listenPort} = HostAndPort
 -- @
 pattern ConnectTo :: host -> port -> ConnectTo t host port
 pattern ConnectTo{connectHost, connectPort} = HostAndPort
-    { _host = connectHost
-    , _port = connectPort
+    { host = connectHost
+    , port = connectPort
     }
 
 -- | Data type that represents pair @(host, port)@ which uses two additional
@@ -217,8 +216,8 @@ pattern ConnectTo{connectHost, connectPort} = HostAndPort
 --
 -- * @'ConnectTo' = 'HostAndPort' ''Connect'@
 data HostAndPort (tag1 :: k1) (tag2 :: k2) host port = HostAndPort
-    { _host :: !host
-    , _port :: !port
+    { host :: !host
+    , port :: !port
     }
   deriving (Generic)
 
@@ -290,11 +289,11 @@ showsPrecHostAndPortWith
     -> HostAndPort tag1 tag2 host port
     -> ShowS
 showsPrecHostAndPortWith showsPrecTypeName showsPrecHost showsPrecPort d
-  HostAndPort{..} =
+  HostAndPort{host, port} =
     showParen (d >= appPrecedence)
         $ showsPrecTypeName Proxy Proxy
-        . showChar ' ' . showsPrecHost appPrecedence _host
-        . showChar ' ' . showsPrecPort appPrecedence _port
+        . showChar ' ' . showsPrecHost appPrecedence host
+        . showChar ' ' . showsPrecPort appPrecedence port
   where
     appPrecedence = 11
 {-# INLINEABLE showsPrecHostAndPortWith #-}
@@ -306,8 +305,8 @@ eqHostAndPortWith
     -> HostAndPort tag1 tag2 host2 port2
     -> Bool
 eqHostAndPortWith eqHosts eqPorts
-  HostAndPort{_host = host1, _port = port1}
-  HostAndPort{_host = host2, _port = port2} =
+  HostAndPort{host = host1, port = port1}
+  HostAndPort{host = host2, port = port2} =
     eqHosts host1 host2 && eqPorts port1 port2
 {-# INLINEABLE eqHostAndPortWith #-}
 
@@ -319,8 +318,8 @@ compareHostAndPortWith
     -> HostAndPort tag1 tag2 host2 port2
     -> Ordering
 compareHostAndPortWith compareHosts comparePorts
-  HostAndPort{_host = host1, _port = port1}
-  HostAndPort{_host = host2, _port = port2} =
+  HostAndPort{host = host1, port = port1}
+  HostAndPort{host = host2, port = port2} =
     case compareHosts host1 host2 of
         EQ -> comparePorts port1 port2
         r -> r
@@ -328,12 +327,12 @@ compareHostAndPortWith compareHosts comparePorts
 
 instance Class.HasHost (HostAndPort t1 t2 host port) where
     type Host (HostAndPort t1 t2 host port) = host
-    host f s@HostAndPort{_host} = f _host <&> \b -> s{_host = b}
+    host f s@HostAndPort{host} = f host <&> \b -> s{host = b}
     {-# INLINE host #-}
 
 instance Class.HasPort (HostAndPort t1 t2 host port) where
     type Port (HostAndPort t1 t2 host port) = port
-    port f s@HostAndPort{_port} = f _port <&> \b -> s{_port = b}
+    port f s@HostAndPort{port} = f port <&> \b -> s{port = b}
     {-# INLINE port #-}
 
 instance (port ~ Int) => Streaming.HasPort (HostAndPort t1 t2 host port) where

@@ -34,6 +34,12 @@ flags:
     manual: false
     default: false
 
+  generic-lens:
+    description:
+      Use generic-lens for default HasHost and HasPort method implementations.
+    manual: false
+    default: true
+
 when:
   - condition: impl(ghc >=8)
     then:
@@ -53,6 +59,13 @@ when:
       - dhall
     cpp-options:
       -DDHALL
+
+  - condition: flag(generic-lens)
+    dependencies:
+      # TODO: Bounds
+      - generic-lens
+    cpp-options:
+      -DGENERIC_LENS
 
 dependencies:
   - base >=4.7 && <5

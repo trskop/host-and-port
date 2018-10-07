@@ -1,9 +1,16 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies #-}
+
+#ifdef GENERIC_LENS
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+#endif
+
 -- |
 -- Module:      Data.HostAndPort.Class
 -- Description: Generic access to host and port stored in various data types.
--- Copyright:   (c) 2017 Peter Trško
+-- Copyright:   (c) 2017-2018 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -36,8 +43,12 @@ import Data.Functor (Functor)
 import Data.Functor.Const (Const(Const, getConst))
 import Data.Functor.Identity (Identity(Identity, runIdentity))
 
+#ifdef GENERIC_LENS
+import Data.Generics.Product.Typed (HasType, typed)
+#endif
 
--- | Class for data types that contain @('Host' a ~ host)@ in them.
+
+-- | Class for data types that contain @('Host' a)@ in them.
 class HasHost a where
 
     -- | Type used for host. Reason for using polymorphic value is to support
@@ -47,10 +58,19 @@ class HasHost a where
     -- side (connecting to server).
     type Host a :: *
 
-    -- | Lens for accessing @('Host' a ~ host)@ stored in type @a :: *@.
-    host :: (Functor f, Host a ~ host) => (host -> f host) -> a -> f a
+    -- | Lens for accessing @('Host' a)@ stored in type @a :: *@.
+    host :: Functor f => (Host a -> f (Host a)) -> a -> f a
 
--- | Class for data types that contain @('Port' a ~ port)@ in them.
+#ifdef GENERIC_LENS
+    default host
+        :: (Functor f, HasType (Host a) a)
+        => (Host a -> f (Host a))
+        -> a -> f a
+    host = typed
+    {-# INLINE host #-}
+#endif
+
+-- | Class for data types that contain @('Port' a)@ in them.
 class HasPort a where
 
     -- | Type used for port number. Reason for using polymorphic value is to
@@ -58,36 +78,45 @@ class HasPort a where
     -- 'Data.Int.Int', or some custom newtype on top of integral type.
     type Port a :: *
 
-    -- | Lens for accessing @('Port' a ~ port)@ stored in type @a :: *@.
-    port :: (Functor f, Port a ~ port) => (port -> f port) -> a -> f a
+    -- | Lens for accessing @('Port' a)@ stored in type @a :: *@.
+    port :: Functor f => (Port a -> f (Port a)) -> a -> f a
 
-getHost :: (Host a ~ host, HasHost a) => a -> host
+#ifdef GENERIC_LENS
+    default port
+        :: (Functor f, HasType (Port a) a)
+        => (Port a -> f (Port a))
+        -> a -> f a
+    port = typed
+    {-# INLINE port #-}
+#endif
+
+getHost :: HasHost a => a -> Host a
 getHost s = getConst (host Const s)
 {-# INLINE getHost #-}
 
-setHost :: (Host a ~ host, HasHost a) => host -> a -> a
+setHost :: HasHost a => Host a -> a -> a
 setHost h s = runIdentity (host (\_ -> Identity h) s)
 {-# INLINE setHost #-}
 
-getPort :: (Port a ~ port, HasPort a) => a -> port
+getPort :: HasPort a => a -> Port a
 getPort s = getConst (port Const s)
 {-# INLINE getPort #-}
 
-setPort :: (Port a ~ port, HasPort a) => port -> a -> a
+setPort :: HasPort a => Port a -> a -> a
 setPort h s = runIdentity (port (\_ -> Identity h) s)
 {-# INLINE setPort #-}
 
 getHostAndPort
-    :: (Host a ~ host, Port a ~ port, HasHost a, HasPort a)
+    :: (HasHost a, HasPort a)
     => a
-    -> (host, port)
+    -> (Host a, Port a)
 getHostAndPort = getHost &&& getPort
 {-# INLINE getHostAndPort #-}
 
 setHostAndPort
-    :: (Host a ~ host, Port a ~ port, HasHost a, HasPort a)
-    => host
-    -> port
+    :: (HasHost a, HasPort a)
+    => Host a
+    -> Port a
     -> a
     -> a
 setHostAndPort h p = setPort p . setHost h

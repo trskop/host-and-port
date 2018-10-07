@@ -155,7 +155,7 @@ type ConnectTo = HostAndPort 'Connect
 --
 -- @
 -- defaultListenFileApi :: ListenFileApi
--- defaultListenFileApi = 'ListenTo'
+-- defaultListenFileApi = 'ListenFor'
 --     { 'listenHost' = \"example.com\"
 --     , 'listenPort' = 12345
 --     }
@@ -346,12 +346,23 @@ instance (port ~ Int) => Streaming.HasPort (HostAndPort t1 t2 host port) where
 #endif
 
 #ifdef DHALL
+-- | Enum that represents fields of a 'HostAndPort' record in an abstract way.
+--
+-- See 'interpretDhall' for more details.
 data HostOrPortField = HostField | PortField
   deriving (Eq, Generic, Show)
 
+-- | Generic parser for Dhall record that has two fields.
+--
+-- @
+-- 'hostAndPort' = 'interpretDhall' $ \\case
+--      'HostField' -> \"host\"
+--      'PortField' -> \"port\"
+-- @
 interpretDhall
     :: forall tag1 tag2 host port
     .  (HostOrPortField -> Text)
+    -- ^ Get record field names.
     -> Dhall.Type host
     -> Dhall.Type port
     -> Dhall.Type (HostAndPort tag1 tag2 host port)
@@ -360,6 +371,11 @@ interpretDhall fieldName hostType portType = Dhall.record
         <$> Dhall.field (fieldName HostField) hostType
         <*> Dhall.field (fieldName PortField) portType
 
+-- | Parse Dhall record of the form:
+--
+-- > { host : Host
+-- > , port : Port
+-- > }
 hostAndPort
     :: forall tag1 tag2 host port
     .  Dhall.Type host
@@ -369,20 +385,30 @@ hostAndPort = interpretDhall $ \case
     HostField -> "host"
     PortField -> "port"
 
+-- | Parse Dhall record of the form:
+--
+-- > { listenHost : Host
+-- > , listenPort : Port
+-- > }
 listenOn
     :: forall tag host port
     .  Dhall.Type host
     -> Dhall.Type port
-    -> Dhall.Type (HostAndPort 'Listen tag host port)
+    -> Dhall.Type (ListenFor tag host port)
 listenOn = interpretDhall $ \case
     HostField -> "listenHost"
     PortField -> "listenPort"
 
+-- | Parse Dhall record of the form:
+--
+-- > { connectHost : Host
+-- > , connectPort : Port
+-- > }
 connectTo
     :: forall tag host port
     .  Dhall.Type host
     -> Dhall.Type port
-    -> Dhall.Type (HostAndPort 'Connect tag host port)
+    -> Dhall.Type (ConnectTo tag host port)
 connectTo = interpretDhall $ \case
     HostField -> "connectHost"
     PortField -> "connectPort"

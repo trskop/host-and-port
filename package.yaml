@@ -17,6 +17,7 @@ description: |
 copyright: (c) 2017-2018 Peter Trško
 maintainer: Peter Trško <peter.trsko@gmail.com>
 license: BSD3
+license-file: LICENSE
 github: trskop/host-and-port
 category: Data
 
@@ -29,7 +30,7 @@ ghc-options:
 
 flags:
   dhall:
-    description: todo
+    description: Provide support for Dhall.
     manual: false
     default: false
 

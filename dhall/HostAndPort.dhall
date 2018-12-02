@@ -1,8 +1,6 @@
-  let
-    Types = ./HostAndPort/Types.dhall
+let Types = ./HostAndPort/Types.dhall
 
-in let
-    -- Smart constructor for `ListenTo` which is useful to for building smart
+let -- Smart constructor for `ListenTo` which is useful to for building smart
     -- constructors that use default port number, e.g.:
     --
     -- ```
@@ -17,8 +15,7 @@ in let
         , connectPort = port
         }
 
-in let
-    -- Smart constructor for `ConnectTo` which is useful to for building smart
+let -- Smart constructor for `ConnectTo` which is useful to for building smart
     -- constructors that use default port number, e.g.:
     --
     -- ```
@@ -33,7 +30,6 @@ in let
         , listenPort = port
         }
 
-in
-    { connectTo = connectTo
+in  { connectTo = connectTo
     , listenOn = listenOn
     }

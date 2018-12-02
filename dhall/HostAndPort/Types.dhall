@@ -1,31 +1,22 @@
-  let
-    Host : Type = Text
+let Host : Type = Text
 
-in let
-    Port : Type = Natural
+let Port : Type = Natural
 
-in let
-    HostAndPort : Type =
-      { host : Host
-      , port : Port
-      }
-
-in let
-    ConnectTo : Type =
-      { connectHost : Host
-      , connectPort : Port
-      }
-
-in let
-    ListenOn : Type =
-      { listenHost : Host
-      , listenPort : Port
-      }
-
-in
-    { Host = Host
+in  { Host = Host
     , Port = Port
-    , HostAndPort = HostAndPort
-    , ConnectTo = ConnectTo
-    , ListenOn = ListenOn
+
+    , HostAndPort =
+        { host : Host
+        , port : Port
+        }
+
+    , ConnectTo =
+        { connectHost : Host
+        , connectPort : Port
+        }
+
+    , ListenOn =
+        { listenHost : Host
+        , listenPort : Port
+        }
     }

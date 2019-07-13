@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -54,6 +55,7 @@ module Data.HostAndPort.Type
     -- ** Dhall
 #ifdef DHALL
     , HostOrPortField(..)
+    , interpretDhall
     , hostAndPort
     , listenOn
     , connectTo
@@ -381,7 +383,7 @@ hostAndPort
     .  Dhall.Type host
     -> Dhall.Type port
     -> Dhall.Type (HostAndPort tag1 tag2 host port)
-hostAndPort = interpretDhall $ \case
+hostAndPort = interpretDhall \case
     HostField -> "host"
     PortField -> "port"
 
@@ -395,7 +397,7 @@ listenOn
     .  Dhall.Type host
     -> Dhall.Type port
     -> Dhall.Type (ListenFor tag host port)
-listenOn = interpretDhall $ \case
+listenOn = interpretDhall \case
     HostField -> "listenHost"
     PortField -> "listenPort"
 
@@ -409,7 +411,7 @@ connectTo
     .  Dhall.Type host
     -> Dhall.Type port
     -> Dhall.Type (ConnectTo tag host port)
-connectTo = interpretDhall $ \case
+connectTo = interpretDhall \case
     HostField -> "connectHost"
     PortField -> "connectPort"
 #endif

@@ -2,8 +2,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -123,7 +125,7 @@ data ListenOrConnect
     -- ^ Listen for connections.
     | Connect
     -- ^ Connect to server.
-  deriving (Bounded, Enum, Eq, Generic, Show, Read)
+  deriving stock (Bounded, Enum, Eq, Generic, Show, Read)
 
 -- | Host and port pair used on the server side when binding port on which it
 -- will listen for connections. Type @t :: k@ is a phantom type used to
@@ -221,7 +223,7 @@ data HostAndPort (tag1 :: k1) (tag2 :: k2) host port = HostAndPort
     { host :: !host
     , port :: !port
     }
-  deriving (Generic)
+  deriving stock (Generic)
 
 -- |
 -- @
@@ -231,6 +233,7 @@ instance
     ( Show host, Show port, Typeable tag
     ) => Show (HostAndPort 'Listen tag host port)
   where
+    showsPrec :: Int -> HostAndPort 'Listen tag host port -> ShowS
     showsPrec = showsPrecHostAndPortWith showTypeName showsPrec showsPrec
       where
         showTypeName _ tag =
@@ -245,6 +248,7 @@ instance
     ( Show host, Show port, Typeable tag
     ) => Show (HostAndPort 'Connect tag host port)
   where
+    showsPrec :: Int -> HostAndPort 'Connect tag host port -> ShowS
     showsPrec = showsPrecHostAndPortWith showTypeName showsPrec showsPrec
       where
         showTypeName _ tag =
@@ -253,6 +257,14 @@ instance
 
 #ifdef HAVE_DATA_FUNCTOR_CLASSES
 instance (Typeable tag1, Typeable tag2) => Show2 (HostAndPort tag1 tag2) where
+    liftShowsPrec2
+        :: (Int -> a -> ShowS)
+        -> ([a] -> ShowS)
+        -> (Int -> b -> ShowS)
+        -> ([b] -> ShowS)
+        -> Int
+        -> HostAndPort tag1 tag2 a b
+        -> ShowS
     liftShowsPrec2 showsPrecHost _ showsPrecPort _ =
         showsPrecHostAndPortWith showTypeName showsPrecHost showsPrecPort
       where
@@ -262,10 +274,22 @@ instance (Typeable tag1, Typeable tag2) => Show2 (HostAndPort tag1 tag2) where
     {-# INLINEABLE liftShowsPrec2 #-}
 
 instance Eq2 (HostAndPort tag1 tag2) where
+    liftEq2
+        :: (a -> b -> Bool)
+        -> (c -> d -> Bool)
+        -> HostAndPort tag1 tag2 a c
+        -> HostAndPort tag1 tag2 b d
+        -> Bool
     liftEq2 = eqHostAndPortWith
     {-# INLINE liftEq2 #-}
 
 instance Ord2 (HostAndPort tag1 tag2) where
+    liftCompare2
+        :: (a -> b -> Ordering)
+        -> (c -> d -> Ordering)
+        -> HostAndPort tag1 tag2 a c
+        -> HostAndPort tag1 tag2 b d
+        -> Ordering
     liftCompare2 = compareHostAndPortWith
     {-# INLINE liftCompare2 #-}
 #endif
@@ -352,7 +376,7 @@ instance (port ~ Int) => Streaming.HasPort (HostAndPort t1 t2 host port) where
 --
 -- See 'interpretDhall' for more details.
 data HostOrPortField = HostField | PortField
-  deriving (Eq, Generic, Show)
+  deriving stock (Eq, Generic, Show)
 
 -- | Generic parser for Dhall record that has two fields.
 --

@@ -22,7 +22,7 @@
 -- Module:      Data.HostAndPort.Type
 -- Description: Data type representing host and port pair used for connecting
 --              to server or listening for client connections.
--- Copyright:   (c) 2017-2018 Peter Trško
+-- Copyright:   (c) 2017-2019 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -105,7 +105,7 @@ import Text.Show (Show(showsPrec), ShowS, showChar, showParen, showString)
 import Text.Read (Read)
 
 #ifdef DHALL
-import qualified Dhall (Type, field, record)
+import qualified Dhall (Decoder, field, record)
 #endif
 
 import qualified Data.Streaming.Network as Streaming (HasPort(portLens))
@@ -389,9 +389,9 @@ interpretDhall
     :: forall tag1 tag2 host port
     .  (HostOrPortField -> Text)
     -- ^ Get record field names.
-    -> Dhall.Type host
-    -> Dhall.Type port
-    -> Dhall.Type (HostAndPort tag1 tag2 host port)
+    -> Dhall.Decoder host
+    -> Dhall.Decoder port
+    -> Dhall.Decoder (HostAndPort tag1 tag2 host port)
 interpretDhall fieldName hostType portType = Dhall.record
     $ HostAndPort
         <$> Dhall.field (fieldName HostField) hostType
@@ -404,9 +404,9 @@ interpretDhall fieldName hostType portType = Dhall.record
 -- > }
 hostAndPort
     :: forall tag1 tag2 host port
-    .  Dhall.Type host
-    -> Dhall.Type port
-    -> Dhall.Type (HostAndPort tag1 tag2 host port)
+    .  Dhall.Decoder host
+    -> Dhall.Decoder port
+    -> Dhall.Decoder (HostAndPort tag1 tag2 host port)
 hostAndPort = interpretDhall \case
     HostField -> "host"
     PortField -> "port"
@@ -418,9 +418,9 @@ hostAndPort = interpretDhall \case
 -- > }
 listenOn
     :: forall tag host port
-    .  Dhall.Type host
-    -> Dhall.Type port
-    -> Dhall.Type (ListenFor tag host port)
+    .  Dhall.Decoder host
+    -> Dhall.Decoder port
+    -> Dhall.Decoder (ListenFor tag host port)
 listenOn = interpretDhall \case
     HostField -> "listenHost"
     PortField -> "listenPort"
@@ -432,9 +432,9 @@ listenOn = interpretDhall \case
 -- > }
 connectTo
     :: forall tag host port
-    .  Dhall.Type host
-    -> Dhall.Type port
-    -> Dhall.Type (ConnectTo tag host port)
+    .  Dhall.Decoder host
+    -> Dhall.Decoder port
+    -> Dhall.Decoder (ConnectTo tag host port)
 connectTo = interpretDhall \case
     HostField -> "connectHost"
     PortField -> "connectPort"

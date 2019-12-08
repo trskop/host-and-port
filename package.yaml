@@ -27,12 +27,13 @@ extra-source-files:
 
 ghc-options:
   - -Wall
+  - -Wcompat
 
 flags:
   dhall:
     description: Provide support for Dhall.
     manual: false
-    default: false
+    default: true
 
   generic-lens:
     description:
@@ -55,8 +56,7 @@ when:
 
   - condition: flag(dhall)
     dependencies:
-      # TODO: Bounds
-      - dhall
+      - dhall >=1.28.0 && <2 # Version 12.0.0 of Dhall standard
     cpp-options:
       -DDHALL
 

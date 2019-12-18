@@ -24,6 +24,7 @@ category: Data
 extra-source-files:
   - ChangeLog.md
   - README.md
+  - dhall/**/*
 
 ghc-options:
   - -Wall

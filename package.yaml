@@ -14,7 +14,7 @@ description: |
   * Generic parsing of host name and port number from e.g. command line
     arguments.
 
-copyright: (c) 2017-2018 Peter Trško
+copyright: (c) 2017-2019 Peter Trško
 maintainer: Peter Trško <peter.trsko@gmail.com>
 license: BSD3
 license-file: LICENSE

@@ -64,7 +64,7 @@ when:
   - condition: flag(generic-lens)
     dependencies:
       # TODO: Bounds
-      - generic-lens
+      - generic-lens >=1.0.0.2 && <3
     cpp-options:
       -DGENERIC_LENS
 

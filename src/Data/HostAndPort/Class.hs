@@ -42,6 +42,7 @@ import Data.Function ((.))
 import Data.Functor (Functor)
 import Data.Functor.Const (Const(Const, getConst))
 import Data.Functor.Identity (Identity(Identity, runIdentity))
+import Data.Kind (Type)
 
 #ifdef GENERIC_LENS
 import Data.Generics.Product.Typed (HasType, typed)
@@ -56,9 +57,9 @@ class HasHost a where
     -- @streaming-commons@ library uses 'Data.Streaming.Network.HostPreference'
     -- for server side (listening) and 'Data.ByteString.ByteString' for client
     -- side (connecting to server).
-    type Host a :: *
+    type Host a :: Type
 
-    -- | Lens for accessing @('Host' a)@ stored in type @a :: *@.
+    -- | Lens for accessing @('Host' a)@ stored in type @a :: 'Type'@.
     host :: Functor f => (Host a -> f (Host a)) -> a -> f a
 
 #ifdef GENERIC_LENS
@@ -76,9 +77,9 @@ class HasPort a where
     -- | Type used for port number. Reason for using polymorphic value is to
     -- support different data types for different scenarios. For example,
     -- 'Data.Int.Int', or some custom newtype on top of integral type.
-    type Port a :: *
+    type Port a :: Type
 
-    -- | Lens for accessing @('Port' a)@ stored in type @a :: *@.
+    -- | Lens for accessing @('Port' a)@ stored in type @a :: 'Type'@.
     port :: Functor f => (Port a -> f (Port a)) -> a -> f a
 
 #ifdef GENERIC_LENS

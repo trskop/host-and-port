@@ -1,0 +1,88 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: d4f0d88eaf49ddf0166050ff9c5daea4b24e8d49b912473322b68d5d08987071
+
+name:           host-and-port
+version:        0.0.1.0
+synopsis:       Data type and utilities for handling host name and port number pairs
+description:    This package provides:
+                .
+                * Generic data type for storing host name and port number that uses phantom
+                  types to distinguish between server\/client, and various
+                  protocols\/services\/APIs.
+                .
+                * Type classes for accessing host name and port number in a data type using
+                  lenses.
+                .
+                * Generic parsing of host name and port number from e.g. command line
+                  arguments.
+category:       Data
+homepage:       https://github.com/trskop/host-and-port#readme
+bug-reports:    https://github.com/trskop/host-and-port/issues
+maintainer:     Peter Trško <peter.trsko@gmail.com>
+copyright:      (c) 2017-2019 Peter Trško
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    ChangeLog.md
+    README.md
+    dhall/HostAndPort.dhall
+    dhall/HostAndPort/ConnectTo
+    dhall/HostAndPort/connectTo
+    dhall/HostAndPort/Host
+    dhall/HostAndPort/ListenOn
+    dhall/HostAndPort/listenOn
+    dhall/HostAndPort/Port
+    dhall/HostAndPort/Type
+    dhall/HostAndPort/Types.dhall
+
+source-repository head
+  type: git
+  location: https://github.com/trskop/host-and-port
+
+flag dhall
+  description: Provide support for Dhall.
+  manual: False
+  default: True
+
+flag generic-lens
+  description: Use generic-lens for default HasHost and HasPort method implementations.
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Data.HostAndPort
+      Data.HostAndPort.Class
+      Data.HostAndPort.Parse
+      Data.HostAndPort.Type
+  other-modules:
+      Paths_host_and_port
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat
+  build-depends:
+      base >=4.7 && <5
+    , hostname-validate
+    , iproute
+    , streaming-commons
+    , text
+  if impl(ghc >=8)
+    ghc-options: -Wimplicit-prelude -Wmissing-import-lists
+    cpp-options: -DHAVE_DATA_FUNCTOR_CLASSES
+  else
+    ghc-options: -fwarn-implicit-prelude -fwarn-missing-import-lists
+  if flag(dhall)
+    cpp-options: -DDHALL
+    build-depends:
+        dhall >=1.28.0 && <2
+  if flag(generic-lens)
+    cpp-options: -DGENERIC_LENS
+    build-depends:
+        generic-lens >=1.0.0.2 && <3
+  default-language: Haskell2010

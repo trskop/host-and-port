@@ -1,5 +1,5 @@
 name: host-and-port
-version: 0.0.1.0
+version: !include ./version.yaml
 synopsis: Data type and utilities for handling host name and port number pairs
 description: |
   This package provides:
@@ -14,7 +14,7 @@ description: |
   * Generic parsing of host name and port number from e.g. command line
     arguments.
 
-copyright: (c) 2017-2019 Peter Trško
+copyright: (c) 2017-2020 Peter Trško
 maintainer: Peter Trško <peter.trsko@gmail.com>
 license: BSD3
 license-file: LICENSE
@@ -29,6 +29,27 @@ extra-source-files:
 ghc-options:
   - -Wall
   - -Wcompat
+  - -Wimplicit-prelude
+  - -Wmissing-import-lists
+
+default-extensions:
+  - BlockArguments
+  - DefaultSignatures
+  - DeriveFunctor
+  - DeriveGeneric
+  - DerivingStrategies
+  - DuplicateRecordFields
+  - FlexibleContexts
+  - FlexibleInstances
+  - InstanceSigs
+  - LambdaCase
+  - NamedFieldPuns
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - ScopedTypeVariables
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
 
 flags:
   dhall:
@@ -36,44 +57,30 @@ flags:
     manual: false
     default: true
 
-  generic-lens:
-    description:
-      Use generic-lens for default HasHost and HasPort method implementations.
-    manual: false
-    default: true
-
 when:
-  - condition: impl(ghc >=8)
-    then:
-      ghc-options:
-        - -Wimplicit-prelude
-        - -Wmissing-import-lists
-      cpp-options:
-        - -DHAVE_DATA_FUNCTOR_CLASSES
-    else:
-      ghc-options:
-        - -fwarn-implicit-prelude
-        - -fwarn-missing-import-lists
-
   - condition: flag(dhall)
     dependencies:
-      - dhall >=1.28.0 && <2 # Version 12.0.0 of Dhall standard
+      - dhall >= 1.33.0
+      # ^ Inject/Interpret were renamed to ToDhall/FromDhall in version 1.27.0
+      # (standard 11.0.0), we can't go below that now as we use the new names.
+      #
+      # Bultins `Optional/{fold,build}` were removed in version 1.33.0
+      # (standard 17.0.0), while this should not affect the code here, it does
+      # make binary serialisation incompatible when it comes to more
+      # complicated use cases. To prevent major issues we need to depend on at
+      # least this version.
+      #
+      # Version 1.36.0 added `Text/replace` and made `with` a first class
+      # citizen.  While we may want to depend on these features in the future,
+      # if we limit our selves to standard 17.0.0 we should still be
+      # compatible, unlike in the case of removed `Optional/{fold,build}`.
     cpp-options:
       -DDHALL
 
-  - condition: flag(generic-lens)
-    dependencies:
-      # TODO: Bounds
-      - generic-lens >=1.0.0.2 && <3
-    cpp-options:
-      -DGENERIC_LENS
-
 dependencies:
   - base >=4.7 && <5
-  - hostname-validate
-  - iproute
-  - streaming-commons
-  - text
+  # ^ Version 4.9.0.0 is the first one that introduced `Data.Functor.Classes`
+  # module, it's bundled with GHC >=8.
 
 library:
   source-dirs: src
@@ -82,6 +89,23 @@ library:
     - Data.HostAndPort.Class
     - Data.HostAndPort.Parse
     - Data.HostAndPort.Type
+
+  dependencies:
+    - generic-lens >=1.0.0.2 && <3
+    # ^ Version 1.0.0.2 fixed compile-time performance issue.
+    - hostname-validate >=1.0.0 && <2
+    # ^ At the time of writing 1.0.0 was the only available version.
+    - iproute >=1.4.0 && <2
+    # ^ We depend on `IP` data type, which has been introduced in version 1.0.0
+    # and hadn't changed since. Instance `Eq IP` is correctly defined starting
+    # version 1.4.0.
+    - streaming-commons >=0.1.0.0 && <1
+    # ^ We define `HasPort` instance. That type class was there unchanged since
+    # version 0.1.0.0.
+    #
+    # We define code that uses `HostPreference` data type, which has been there
+    # since version 0.1.0.0 and hasn't changed ever since.
+    - text >=1.2.0.0 && <2
 
 # tests:
   # spec:

@@ -1,14 +1,7 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Data.HostAndPort.Parse
 -- Description: Parse String into host and port pair.
--- Copyright:   (c) 2017 Peter Trško
+-- Copyright:   (c) 2017-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -44,7 +37,7 @@ import Control.Monad ((>=>))
 import Data.Bool (otherwise)
 import Data.Either (Either(Left, Right), either)
 import Data.Eq (Eq, (==))
-import Data.Function (($), (.), const, id)
+import Data.Function ((.), const, id)
 import Data.Functor (Functor, (<$>), fmap)
 import qualified Data.List as List (break, drop)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
@@ -68,22 +61,29 @@ import Data.HostAndPort.Class (HasHost, HasPort, Host, Port, setHost, setPort)
 -- | Hots are specified either by their 'IpAddress' or by their 'HostName'.
 data ParsedHost s
     = HostName s
-    -- ^ Host name as defined by <https://tools.ietf.org/html/rfc1123 RFC 1123>.
+    -- ^ Host name as defined by [RFC1123 — Requirements for Internet Hosts —
+    -- Application and Support](https://tools.ietf.org/html/rfc1123).
     | IpAddress IP
     -- ^ IPv4 or IPv6 address.
   deriving (Eq, Functor, Generic, Generic1, Show)
 
 -- | Parse string in the form of either @HOST[:PORT]@ or @[HOST]:PORT@. In
 -- other words, either @HOST@ or @PORT@ has to be provided. Where @PORT@ is a
--- TCP/UDP port number, and @HOST@ is one of:
+-- TCP\/UDP port number, and @HOST@ is one of:
 --
 -- * @*@ - Listen on all interfaces, both IPv4 and IPv6.
+--
 -- * @0.0.0.0@ - Listen on all interfaces, but IPv4 only.
+--
 -- * @[::]@ - Listen on all interfaces, both IPv6 and IPv4.
+--
 -- * Valid IPv4 address, e.g. @127.0.0.1@ for IPv4 loopback.
+--
 -- * Valid IPv6 address in square brackets, e.g. @[::1]@ for IPv6 loopback.
--- * Valid hostname as defined by
---   <https://tools.ietf.org/html/rfc1123 RFC 1123>, e.g. @\"example.com\"@.
+--
+-- * Valid hostname as defined by [RFC1123 — Requirements for Internet Hosts —
+--   Application and Support](https://tools.ietf.org/html/rfc1123), e.g.
+--   @\"example.com\"@.
 parseListen
     :: String
     -> Either String (Maybe (ParsedHost String), Maybe Word)
@@ -109,7 +109,7 @@ parseListen = \case
     parsePort' = \case
         ""      -> Right Nothing
         ':' : s -> Just <$> parsePort s
-        s       -> Left $ "Expected :PORT, but got: " <> show s
+        s       -> Left ("Expected :PORT, but got: " <> show s)
             -- This is an indication of a bug in code that is calling
             -- parsePort'.
 
@@ -138,13 +138,13 @@ parseConnect = parseListen >=> onlyValidIp >=> onlyValidPort
           | otherwise -> Right r
         r -> Right r
 
-    invalidAddress n v = Left $ "Invalid IPv" <> n <> " address: " <> show v
+    invalidAddress n v = Left ("Invalid IPv" <> n <> " address: " <> show v)
 
 -- {{{ Simple Parsers ---------------------------------------------------------
 
 -- | Parse port number, i.e. value in range @[0, 65535]@.
 parsePort :: String -> Either String Word
-parsePort s = maybe (Left notAPortNumber) validatePortNumber $ readMaybe s
+parsePort s = maybe (Left notAPortNumber) validatePortNumber (readMaybe s)
   where
     notAPortNumber = "Not a port number: " <> show s
 
@@ -154,20 +154,20 @@ parsePort s = maybe (Left notAPortNumber) validatePortNumber $ readMaybe s
 
 -- | Parse 'IP' address, either IPv4 or IPv6.
 parseIp :: String -> Either String IP
-parseIp s = maybe (Left notIpAddr) Right $ readMaybe s
+parseIp s = maybe (Left notIpAddr) Right (readMaybe s)
   where
     notIpAddr = "Not an IP address: " <> show s
 
 -- | Parse IPv6 address only.
 parseIpv6 :: String -> Either String IP
 parseIpv6 "*" = Right "::"
-parseIpv6 s   = maybe (Left notIpv6Addr) (Right . IPv6) $ readMaybe s
+parseIpv6 s   = maybe (Left notIpv6Addr) (Right . IPv6) (readMaybe s)
   where
     notIpv6Addr = "Not an IPv6 addres: " <> show s
 
 -- | Parse IPv4 address only.
 parseIpv4 :: String -> Either String IP
-parseIpv4 s = maybe (Left notIpv4Addr) (Right . IPv4) $ readMaybe s
+parseIpv4 s = maybe (Left notIpv4Addr) (Right . IPv4) (readMaybe s)
   where
     notIpv4Addr = "Not an IPv4 addres: " <> show s
 
@@ -176,19 +176,20 @@ parseIpv4 s = maybe (Left notIpv4Addr) (Right . IPv4) $ readMaybe s
 parseHostName :: String -> Either String String
 parseHostName s
   | validHostname (fromString s) = Right s
-  | otherwise                    = invalidHostName $ show s
+  | otherwise                    = invalidHostName (show s)
 
 -- | Parse host name or IP address, this includes @::@ and @0.0.0.0@.
 parseHost :: String -> Either String (ParsedHost String)
 parseHost s =
-    maybe (Left notAHostName) Right $ parseIp' <|> parseHostName'
+    maybe (Left notAHostName) Right do
+        parseIp' <|> parseHostName'
   where
     notAHostName = "Neither host name nor IP address: " <> show s
 
-    parseIp' = either (const Nothing) (Just . IpAddress) $ parseIp s
+    parseIp' = either (const Nothing) (Just . IpAddress) (parseIp s)
 
     parseHostName' =
-        either (const Nothing) (Just . HostName) $ parseHostName s
+        either (const Nothing) (Just . HostName) (parseHostName s)
 
 -- }}} Simple Parsers ---------------------------------------------------------
 
@@ -254,13 +255,13 @@ hostPreference = \case
 -- >>> invalidPortNumber "Value 12345 was prohibited! Just because."
 -- Left "Invalid port number: Value 12345 was prohibited! Just because."
 invalidPortNumber :: String -> Either String a
-invalidPortNumber msg = Left $ "Invalid port number: " <> msg
+invalidPortNumber msg = Left ("Invalid port number: " <> msg)
 
 -- | Fail on inalid host name.
 --
 -- >>> invalidPortNumber $ "\"example.com\" is reserved for example code."
 -- Left "Invalid port number: \"example.com\" is reserved for example code."
 invalidHostName :: String -> Either String a
-invalidHostName msg = Left $ "Invalid host name: " <> msg
+invalidHostName msg = Left ("Invalid host name: " <> msg)
 
 -- }}} Utilities --------------------------------------------------------------

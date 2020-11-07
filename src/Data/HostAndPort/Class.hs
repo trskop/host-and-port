@@ -1,12 +1,3 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TypeFamilies #-}
-
-#ifdef GENERIC_LENS
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts #-}
-#endif
-
 -- |
 -- Module:      Data.HostAndPort.Class
 -- Description: Generic access to host and port stored in various data types.
@@ -43,10 +34,7 @@ import Data.Functor (Functor)
 import Data.Functor.Const (Const(Const, getConst))
 import Data.Functor.Identity (Identity(Identity, runIdentity))
 import Data.Kind (Type)
-
-#ifdef GENERIC_LENS
 import Data.Generics.Product.Typed (HasType, typed)
-#endif
 
 
 -- | Class for data types that contain @('Host' a)@ in them.
@@ -62,14 +50,12 @@ class HasHost a where
     -- | Lens for accessing @('Host' a)@ stored in type @a :: 'Type'@.
     host :: Functor f => (Host a -> f (Host a)) -> a -> f a
 
-#ifdef GENERIC_LENS
     default host
         :: (Functor f, HasType (Host a) a)
         => (Host a -> f (Host a))
         -> a -> f a
     host = typed
     {-# INLINE host #-}
-#endif
 
 -- | Class for data types that contain @('Port' a)@ in them.
 class HasPort a where
@@ -82,14 +68,12 @@ class HasPort a where
     -- | Lens for accessing @('Port' a)@ stored in type @a :: 'Type'@.
     port :: Functor f => (Port a -> f (Port a)) -> a -> f a
 
-#ifdef GENERIC_LENS
     default port
         :: (Functor f, HasType (Port a) a)
         => (Port a -> f (Port a))
         -> a -> f a
     port = typed
     {-# INLINE port #-}
-#endif
 
 getHost :: HasHost a => a -> Host a
 getHost s = getConst (host Const s)

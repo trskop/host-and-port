@@ -4,15 +4,17 @@
 # GHC 8.8.3
 resolver: lts-16.3
 
-packages:
-  - '.'
+# (GHC 8.8.4)
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/20.yaml
 
 extra-deps:
-  - dhall-1.33.1
+  - aeson-yaml-1.1.0.0
+  - dhall-1.36.0
+  - haskeline-0.8.1.0
+  - prettyprinter-1.7.0
   - repline-0.4.0.0
-  - haskeline-0.8.0.0
 
 flags:
   host-and-port:
     dhall: true
-    generic-lens: true

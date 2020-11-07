@@ -1,28 +1,12 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-
-#ifdef DHALL
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-#endif
-
 -- |
 -- Module:      Data.HostAndPort.Type
 -- Description: Data type representing host and port pair used for connecting
 --              to server or listening for client connections.
--- Copyright:   (c) 2017-2019 Peter Trško
+-- Copyright:   (c) 2017-2020 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -62,7 +46,7 @@ module Data.HostAndPort.Type
     , listenOn
     , connectTo
 #else
-    -- | Dhall support is currently turned on, recompile with @dhall@
+    -- | Dhall support is currently disabled, recompile with @dhall@
     -- compilation option enabled.
 #endif
     )
@@ -89,13 +73,11 @@ import Data.Functor
 #endif
     , (<$>)
     )
-#ifdef HAVE_DATA_FUNCTOR_CLASSES
 import Data.Functor.Classes
     ( Eq2(liftEq2)
     , Ord2(liftCompare2)
     , Show2(liftShowsPrec2)
     )
-#endif
 import Data.Int (Int)
 import Data.Ord (Ordering(EQ), (>=))
 import Data.Proxy (Proxy(Proxy))
@@ -255,7 +237,6 @@ instance
             showString "ConnectTo @" . showsTypeRep (typeRep tag)
     {-# INLINEABLE showsPrec #-}
 
-#ifdef HAVE_DATA_FUNCTOR_CLASSES
 instance (Typeable tag1, Typeable tag2) => Show2 (HostAndPort tag1 tag2) where
     liftShowsPrec2
         :: (Int -> a -> ShowS)
@@ -292,7 +273,6 @@ instance Ord2 (HostAndPort tag1 tag2) where
         -> Ordering
     liftCompare2 = compareHostAndPortWith
     {-# INLINE liftCompare2 #-}
-#endif
 
 showsPrecHostAndPortWith
     :: forall host port tag1 tag2

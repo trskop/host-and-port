@@ -160,6 +160,7 @@ pattern ListenFor{listenHost, listenPort} = HostAndPort
     { host = listenHost
     , port = listenPort
     }
+{-# COMPLETE ListenFor #-}
 
 -- | Behaves as a record data constructor for 'ConnectTo' type.
 --
@@ -185,6 +186,7 @@ pattern ConnectTo{connectHost, connectPort} = HostAndPort
     { host = connectHost
     , port = connectPort
     }
+{-# COMPLETE ConnectTo #-}
 
 -- | Data type that represents pair @(host, port)@ which uses two additional
 -- poly-kinded phantom types @tag1 :: k1@ and @tag2 :: k2@, which have

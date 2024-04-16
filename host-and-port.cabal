@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 775eef934167545403ca9973c6d7bc10989f6ad7e3bf41cd5cc3317814675a03
+-- hash: fa203ec420c8116e076683855c284c15a7a337a7a5b2835da93afc2e65e45962
 
 name:           host-and-port
-version:        0.0.1.0
+version:        0.0.2.0
 synopsis:       Data type and utilities for handling host name and port number pairs
 description:    This package provides:
                 .
@@ -24,7 +24,7 @@ category:       Data
 homepage:       https://github.com/trskop/host-and-port#readme
 bug-reports:    https://github.com/trskop/host-and-port/issues
 maintainer:     Peter Trško <peter.trsko@gmail.com>
-copyright:      (c) 2017-2020 Peter Trško
+copyright:      (c) 2017-2024 Peter Trško
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -62,17 +62,42 @@ library
       Paths_host_and_port
   hs-source-dirs:
       src
-  default-extensions: BlockArguments DefaultSignatures DeriveFunctor DeriveGeneric DerivingStrategies DuplicateRecordFields FlexibleContexts FlexibleInstances InstanceSigs LambdaCase NamedFieldPuns NoImplicitPrelude OverloadedStrings ScopedTypeVariables TupleSections TypeApplications TypeFamilies
-  ghc-options: -Wall -Wcompat -Wimplicit-prelude -Wmissing-import-lists
+  default-extensions:
+      BlockArguments
+      DataKinds
+      DefaultSignatures
+      DeriveFunctor
+      DeriveGeneric
+      DerivingStrategies
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      InstanceSigs
+      LambdaCase
+      NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
+      PatternSynonyms
+      PolyKinds
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+  ghc-options: -Wall -Wcompat -Wimplicit-prelude -Wincomplete-record-updates -Wpartial-fields
   build-depends:
-      base >=4.7 && <5
+      base >=4.17 && <5
     , generic-lens >=1.0.0.2 && <3
     , hostname-validate >=1.0.0 && <2
     , iproute >=1.4.0 && <2
     , streaming-commons >=0.1.0.0 && <1
-    , text >=1.2.0.0 && <2
+    , text >=1.2.0.0 && <3
+  default-language: Haskell2010
+  if impl(ghc >8.8)
+    ghc-options: -Wmissing-deriving-strategies
+  if impl(ghc >8.10)
+    ghc-options: -Wredundant-record-wildcards -Wunused-packages -Wunused-record-wildcards
   if flag(dhall)
     cpp-options: -DDHALL
     build-depends:
         dhall >=1.33.0
-  default-language: Haskell2010

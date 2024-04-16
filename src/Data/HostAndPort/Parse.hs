@@ -1,7 +1,7 @@
 -- |
 -- Module:      Data.HostAndPort.Parse
 -- Description: Parse String into host and port pair.
--- Copyright:   (c) 2017-2020 Peter Trško
+-- Copyright:   (c) 2017-2024 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -39,15 +39,16 @@ import Data.Either (Either(Left, Right), either)
 import Data.Eq (Eq, (==))
 import Data.Function ((.), const, id)
 import Data.Functor (Functor, (<$>), fmap)
-import qualified Data.List as List (break, drop)
 import Data.Maybe (Maybe(Just, Nothing), maybe)
 import Data.Ord ((>))
 import Data.Semigroup ((<>))
 import Data.String (String, fromString)
+import Data.Type.Equality (type (~))
 import Data.Word (Word)
 import GHC.Generics (Generic, Generic1)
 import Text.Read (readMaybe)
 import Text.Show (Show, show)
+import qualified Data.List as List (break, drop)
 
 import Data.IP (IP(IPv4, IPv6))
 import Data.Streaming.Network.Internal
@@ -65,7 +66,7 @@ data ParsedHost s
     -- Application and Support](https://tools.ietf.org/html/rfc1123).
     | IpAddress IP
     -- ^ IPv4 or IPv6 address.
-  deriving (Eq, Functor, Generic, Generic1, Show)
+  deriving stock (Eq, Functor, Generic, Generic1, Show)
 
 -- | Parse string in the form of either @HOST[:PORT]@ or @[HOST]:PORT@. In
 -- other words, either @HOST@ or @PORT@ has to be provided. Where @PORT@ is a

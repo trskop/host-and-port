@@ -1,12 +1,9 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE PolyKinds #-}
 -- |
 -- Module:      Data.HostAndPort.Type
 -- Description: Data type representing host and port pair used for connecting
 --              to server or listening for client connections.
--- Copyright:   (c) 2017-2020 Peter Trško
+-- Copyright:   (c) 2017-2024 Peter Trško
 -- License:     BSD3
 --
 -- Maintainer:  peter.trsko@gmail.com
@@ -57,22 +54,8 @@ import Prelude (Bounded, Enum)
 import Control.Applicative ((<*>))
 import Data.Bool (Bool, (&&))
 import Data.Eq (Eq)
-import Data.Function
-    ( ($)
-    , (.)
-#if !MIN_VERSION_base(4,11,0)
-    , flip
-#endif
-    )
-import Data.Functor
-#if MIN_VERSION_base(4,11,0)
-    ( (<&>)
-#else
-    ( Functor
-    , fmap
-#endif
-    , (<$>)
-    )
+import Data.Function (($), (.))
+import Data.Functor ((<$>), (<&>))
 import Data.Functor.Classes
     ( Eq2(liftEq2)
     , Ord2(liftCompare2)
@@ -81,6 +64,7 @@ import Data.Functor.Classes
 import Data.Int (Int)
 import Data.Ord (Ordering(EQ), (>=))
 import Data.Proxy (Proxy(Proxy))
+import Data.Type.Equality (type (~))
 import Data.Typeable (Typeable, typeRep, showsTypeRep)
 import GHC.Generics (Generic)
 import Text.Show (Show(showsPrec), ShowS, showChar, showParen, showString)
@@ -346,12 +330,6 @@ instance Class.HasPort (HostAndPort t1 t2 host port) where
 instance (port ~ Int) => Streaming.HasPort (HostAndPort t1 t2 host port) where
     portLens = Class.port
     {-# INLINE portLens #-}
-
-#if !MIN_VERSION_base(4,11,0)
-(<&>) :: Functor f => f a -> (a -> b) -> f b
-(<&>) = flip fmap
-{-# INLINE (<&>) #-}
-#endif
 
 #ifdef DHALL
 -- | Enum that represents fields of a 'HostAndPort' record in an abstract way.

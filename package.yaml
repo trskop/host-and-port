@@ -14,7 +14,7 @@ description: |
   * Generic parsing of host name and port number from e.g. command line
     arguments.
 
-copyright: (c) 2017-2020 Peter Trško
+copyright: (c) 2017-2024 Peter Trško
 maintainer: Peter Trško <peter.trsko@gmail.com>
 license: BSD3
 license-file: LICENSE
@@ -27,13 +27,15 @@ extra-source-files:
   - dhall/**/*
 
 ghc-options:
-  - -Wall
-  - -Wcompat
-  - -Wimplicit-prelude
-  - -Wmissing-import-lists
+  - "-Wall"
+  - "-Wcompat"
+  - "-Wimplicit-prelude"
+  - "-Wincomplete-record-updates"
+  - "-Wpartial-fields"
 
 default-extensions:
   - BlockArguments
+  - DataKinds
   - DefaultSignatures
   - DeriveFunctor
   - DeriveGeneric
@@ -46,10 +48,13 @@ default-extensions:
   - NamedFieldPuns
   - NoImplicitPrelude
   - OverloadedStrings
+  - PatternSynonyms
+  - PolyKinds
   - ScopedTypeVariables
   - TupleSections
   - TypeApplications
   - TypeFamilies
+  - TypeOperators
 
 flags:
   dhall:
@@ -58,6 +63,16 @@ flags:
     default: true
 
 when:
+  - condition: impl(ghc >8.8)
+    ghc-options:
+      - "-Wmissing-deriving-strategies"
+
+  - condition: impl(ghc >8.10)
+    ghc-options:
+      - "-Wredundant-record-wildcards"
+      - "-Wunused-packages"
+      - "-Wunused-record-wildcards"
+
   - condition: flag(dhall)
     dependencies:
       - dhall >= 1.33.0
@@ -78,9 +93,14 @@ when:
       -DDHALL
 
 dependencies:
-  - base >=4.7 && <5
-  # ^ Version 4.9.0.0 is the first one that introduced `Data.Functor.Classes`
-  # module, it's bundled with GHC >=8.
+  - base >=4.17 && <5
+  # ^ Why this version bounds:
+  #
+  # * Version 4.9.0.0 is the first one that introduced `Data.Functor.Classes`
+  #   module, it's bundled with GHC >=8.
+  # * Version 4.17.0.0 is the first one that supports GHC Proposal #371 and
+  #   exports `~` via `Data.Type.Equality` module. This version is bundled with
+  #   GHC 9.4.1.
 
 library:
   source-dirs: src
@@ -105,7 +125,7 @@ library:
     #
     # We define code that uses `HostPreference` data type, which has been there
     # since version 0.1.0.0 and hasn't changed ever since.
-    - text >=1.2.0.0 && <2
+    - text >=1.2.0.0 && <3
 
 # tests:
   # spec:

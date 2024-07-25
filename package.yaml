@@ -21,6 +21,8 @@ license-file: LICENSE
 github: trskop/host-and-port
 category: Data
 
+tested-with: GHC == 9.4.1, GHC == 9.6.6
+
 extra-source-files:
   - ChangeLog.md
   - README.md
@@ -28,10 +30,14 @@ extra-source-files:
 
 ghc-options:
   - "-Wall"
-  - "-Wcompat"
-  - "-Wimplicit-prelude"
-  - "-Wincomplete-record-updates"
-  - "-Wpartial-fields"
+  - "-Wcompat" # GHC ≥8.0
+  - "-Wimplicit-prelude" # GHC ≥6.8
+  - "-Wincomplete-record-updates" # GHC ≥6.4
+  - "-Wmissing-deriving-strategies" # GHC ≥8.8
+  - "-Wpartial-fields" # GHC ≥8.4
+  - "-Wredundant-record-wildcards" # GHC ≥8.10
+  - "-Wunused-packages" # GHC ≥8.10
+  - "-Wunused-record-wildcards" # GHC ≥8.10
 
 default-extensions:
   - BlockArguments
@@ -43,6 +49,7 @@ default-extensions:
   - DuplicateRecordFields
   - FlexibleContexts
   - FlexibleInstances
+  - ImportQualifiedPost # GHC >8.10
   - InstanceSigs
   - LambdaCase
   - NamedFieldPuns
@@ -62,16 +69,17 @@ flags:
     manual: false
     default: true
 
-when:
-  - condition: impl(ghc >8.8)
-    ghc-options:
-      - "-Wmissing-deriving-strategies"
+  pedantic:
+    description: Turn on additional warning flags
+    manual: true
+    default: false
 
-  - condition: impl(ghc >8.10)
+when:
+  - condition: flag(pedantic)
     ghc-options:
-      - "-Wredundant-record-wildcards"
-      - "-Wunused-packages"
-      - "-Wunused-record-wildcards"
+      # Auto-generated files do not turn off this warning locally and it cannot
+      # be fixed easily.
+      - "-Wprepositive-qualified-module" # GHC ≥8.10
 
   - condition: flag(dhall)
     dependencies:
@@ -102,6 +110,25 @@ dependencies:
   #   exports `~` via `Data.Type.Equality` module. This version is bundled with
   #   GHC 9.4.1.
 
+# All the dependencies that we use with version bounds. This keeps them all
+# consistent by the virtue of sharing.
+_dependencies:
+  - &generic-lens      "generic-lens >=1.0.0.2 && <3"
+  # ^ Version 1.0.0.2 fixed compile-time performance issue.
+  - &hostname-validate "hostname-validate >=1.0.0 && <2"
+  # ^ At the time of writing 1.0.0 was the only available version.
+  - &iproute           "iproute >=1.4.0 && <2"
+  # ^ We depend on `IP` data type, which has been introduced in version 1.0.0
+  # and hadn't changed since. Instance `Eq IP` is correctly defined starting
+  # version 1.4.0.
+  - &streaming-commons "streaming-commons >=0.1.0.0 && <1"
+  # ^ We define `HasPort` instance. That type class was there unchanged since
+  # version 0.1.0.0.
+  #
+  # We define code that uses `HostPreference` data type, which has been there
+  # since version 0.1.0.0 and hasn't changed ever since.
+  - &text              "text >=1.2.0.0 && <3"
+
 library:
   source-dirs: src
   exposed-modules:
@@ -111,21 +138,11 @@ library:
     - Data.HostAndPort.Type
 
   dependencies:
-    - generic-lens >=1.0.0.2 && <3
-    # ^ Version 1.0.0.2 fixed compile-time performance issue.
-    - hostname-validate >=1.0.0 && <2
-    # ^ At the time of writing 1.0.0 was the only available version.
-    - iproute >=1.4.0 && <2
-    # ^ We depend on `IP` data type, which has been introduced in version 1.0.0
-    # and hadn't changed since. Instance `Eq IP` is correctly defined starting
-    # version 1.4.0.
-    - streaming-commons >=0.1.0.0 && <1
-    # ^ We define `HasPort` instance. That type class was there unchanged since
-    # version 0.1.0.0.
-    #
-    # We define code that uses `HostPreference` data type, which has been there
-    # since version 0.1.0.0 and hasn't changed ever since.
-    - text >=1.2.0.0 && <3
+    - *generic-lens
+    - *hostname-validate
+    - *iproute
+    - *streaming-commons
+    - *text
 
 # tests:
   # spec:

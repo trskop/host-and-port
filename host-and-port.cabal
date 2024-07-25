@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fa203ec420c8116e076683855c284c15a7a337a7a5b2835da93afc2e65e45962
+-- hash: fbe638cc61b395e6e6327efa3c0c677b53acbc14858756b05222398667781e47
 
 name:           host-and-port
-version:        0.0.2.0
+version:        0.1.0.0
 synopsis:       Data type and utilities for handling host name and port number pairs
 description:    This package provides:
                 .
@@ -28,16 +28,21 @@ copyright:      (c) 2017-2024 Peter Trško
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
+tested-with:
+    GHC == 9.4.1, GHC == 9.6.6
 extra-source-files:
     ChangeLog.md
     README.md
     dhall/ConnectTo/connectTo.dhall
+    dhall/ConnectTo/default.dhall
     dhall/ConnectTo/package.dhall
     dhall/ConnectTo/Type.dhall
+    dhall/HostAndPort/default.dhall
     dhall/HostAndPort/Host.dhall
     dhall/HostAndPort/package.dhall
     dhall/HostAndPort/Port.dhall
     dhall/HostAndPort/Type.dhall
+    dhall/ListenOn/default.dhall
     dhall/ListenOn/listenOn.dhall
     dhall/ListenOn/package.dhall
     dhall/ListenOn/Type.dhall
@@ -51,6 +56,11 @@ flag dhall
   description: Provide support for Dhall.
   manual: False
   default: True
+
+flag pedantic
+  description: Turn on additional warning flags
+  manual: True
+  default: False
 
 library
   exposed-modules:
@@ -72,6 +82,7 @@ library
       DuplicateRecordFields
       FlexibleContexts
       FlexibleInstances
+      ImportQualifiedPost
       InstanceSigs
       LambdaCase
       NamedFieldPuns
@@ -84,7 +95,7 @@ library
       TypeApplications
       TypeFamilies
       TypeOperators
-  ghc-options: -Wall -Wcompat -Wimplicit-prelude -Wincomplete-record-updates -Wpartial-fields
+  ghc-options: -Wall -Wcompat -Wimplicit-prelude -Wincomplete-record-updates -Wmissing-deriving-strategies -Wpartial-fields -Wredundant-record-wildcards -Wunused-packages -Wunused-record-wildcards
   build-depends:
       base >=4.17 && <5
     , generic-lens >=1.0.0.2 && <3
@@ -93,10 +104,8 @@ library
     , streaming-commons >=0.1.0.0 && <1
     , text >=1.2.0.0 && <3
   default-language: Haskell2010
-  if impl(ghc >8.8)
-    ghc-options: -Wmissing-deriving-strategies
-  if impl(ghc >8.10)
-    ghc-options: -Wredundant-record-wildcards -Wunused-packages -Wunused-record-wildcards
+  if flag(pedantic)
+    ghc-options: -Wprepositive-qualified-module
   if flag(dhall)
     cpp-options: -DDHALL
     build-depends:

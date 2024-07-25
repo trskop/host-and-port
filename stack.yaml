@@ -1,9 +1,11 @@
 # For advanced use and comprehensive documentation of the format, please see:
 # https://docs.haskellstack.org/en/stable/yaml_configuration/
 
-# GHC 9.4.8
 resolver:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/25.yaml
+  # GHC 9.4.8
+# url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/25.yaml
+  # GHC 9.6.6
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/30.yaml
 
 packages:
   - .
@@ -13,3 +15,4 @@ extra-deps: []
 flags:
   host-and-port:
     dhall: true
+    pedantic: true

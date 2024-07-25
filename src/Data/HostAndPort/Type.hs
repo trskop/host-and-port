@@ -53,16 +53,19 @@ import Prelude (Bounded, Enum)
 
 import Control.Applicative ((<*>))
 import Data.Bool (Bool, (&&))
-import Data.Eq (Eq)
+import Data.Eq (Eq((==)), )
 import Data.Function (($), (.))
 import Data.Functor ((<$>), (<&>))
 import Data.Functor.Classes
-    ( Eq2(liftEq2)
+    ( Eq1(liftEq)
+    , Eq2(liftEq2)
+    , Ord1(liftCompare)
     , Ord2(liftCompare2)
+    , Show1(liftShowsPrec)
     , Show2(liftShowsPrec2)
     )
 import Data.Int (Int)
-import Data.Ord (Ordering(EQ), (>=))
+import Data.Ord (Ord(compare), Ordering(EQ), (>=))
 import Data.Proxy (Proxy(Proxy))
 import Data.Type.Equality (type (~))
 import Data.Typeable (Typeable, typeRep, showsTypeRep)
@@ -71,13 +74,13 @@ import Text.Show (Show(showsPrec), ShowS, showChar, showParen, showString)
 import Text.Read (Read)
 
 #ifdef DHALL
-import qualified Dhall (Decoder, field, record)
+import Dhall qualified (Decoder, field, record)
 #endif
 
-import qualified Data.Streaming.Network as Streaming (HasPort(portLens))
+import Data.Streaming.Network qualified as Streaming (HasPort(portLens))
 import Data.Text (Text)
 
-import qualified Data.HostAndPort.Class as Class
+import Data.HostAndPort.Class qualified as Class
     ( HasHost(Host, host)
     , HasPort(Port, port)
     )
@@ -223,7 +226,11 @@ instance
             showString "ConnectTo @" . showsTypeRep (typeRep tag)
     {-# INLINEABLE showsPrec #-}
 
-instance (Typeable tag1, Typeable tag2) => Show2 (HostAndPort tag1 tag2) where
+instance {-# OVERLAPPABLE #-}
+    ( Typeable tag1
+    , Typeable tag2
+    ) => Show2 (HostAndPort tag1 tag2)
+  where
     liftShowsPrec2
         :: (Int -> a -> ShowS)
         -> ([a] -> ShowS)
@@ -240,6 +247,43 @@ instance (Typeable tag1, Typeable tag2) => Show2 (HostAndPort tag1 tag2) where
             . showString " @" . showsTypeRep (typeRep tag2)
     {-# INLINEABLE liftShowsPrec2 #-}
 
+instance {-# OVERLAPPABLE #-}
+    ( Typeable tag1
+    , Typeable tag2
+    , Show host
+    )
+    => Show1 (HostAndPort tag1 tag2 host)
+  where
+    liftShowsPrec
+        :: (Int -> port -> ShowS)
+        -> ([port] -> ShowS)
+        -> Int
+        -> HostAndPort tag1 tag2 host port
+        -> ShowS
+    liftShowsPrec showsPrecPort _ =
+        showsPrecHostAndPortWith showTypeName showsPrec showsPrecPort
+      where
+        showTypeName tag1 tag2 = showString "HostAndPort"
+            . showString " @" . showsTypeRep (typeRep tag1)
+            . showString " @" . showsTypeRep (typeRep tag2)
+    {-# INLINEABLE liftShowsPrec #-}
+
+instance {-# OVERLAPPABLE #-}
+    ( Typeable tag1
+    , Typeable tag2
+    , Show host
+    , Show port
+    )
+    => Show (HostAndPort tag1 tag2 host port)
+  where
+    showsPrec :: Int -> HostAndPort tag1 tag2 host port -> ShowS
+    showsPrec = showsPrecHostAndPortWith showTypeName showsPrec showsPrec
+      where
+        showTypeName tag1 tag2 = showString "HostAndPort"
+            . showString " @" . showsTypeRep (typeRep tag1)
+            . showString " @" . showsTypeRep (typeRep tag2)
+    {-# INLINEABLE showsPrec #-}
+
 instance Eq2 (HostAndPort tag1 tag2) where
     liftEq2
         :: (a -> b -> Bool)
@@ -250,6 +294,23 @@ instance Eq2 (HostAndPort tag1 tag2) where
     liftEq2 = eqHostAndPortWith
     {-# INLINE liftEq2 #-}
 
+instance Eq a => Eq1 (HostAndPort tag1 tag2 a) where
+    liftEq
+        :: (b -> c -> Bool)
+        -> HostAndPort tag1 tag2 a b
+        -> HostAndPort tag1 tag2 a c
+        -> Bool
+    liftEq = eqHostAndPortWith (==)
+    {-# INLINE liftEq #-}
+
+instance (Eq a, Eq b) => Eq (HostAndPort tag1 tag2 a b) where
+    (==)
+        :: HostAndPort tag1 tag2 a b
+        -> HostAndPort tag1 tag2 a b
+        -> Bool
+    (==) = eqHostAndPortWith (==) (==)
+    {-# INLINE (==) #-}
+
 instance Ord2 (HostAndPort tag1 tag2) where
     liftCompare2
         :: (a -> b -> Ordering)
@@ -259,6 +320,23 @@ instance Ord2 (HostAndPort tag1 tag2) where
         -> Ordering
     liftCompare2 = compareHostAndPortWith
     {-# INLINE liftCompare2 #-}
+
+instance Ord a => Ord1 (HostAndPort tag1 tag2 a) where
+    liftCompare
+        :: (b -> c -> Ordering)
+        -> HostAndPort tag1 tag2 a b
+        -> HostAndPort tag1 tag2 a c
+        -> Ordering
+    liftCompare = compareHostAndPortWith compare
+    {-# INLINE liftCompare #-}
+
+instance (Ord a, Ord b) => Ord (HostAndPort tag1 tag2 a b) where
+    compare
+        :: HostAndPort tag1 tag2 a b
+        -> HostAndPort tag1 tag2 a b
+        -> Ordering
+    compare = compareHostAndPortWith compare compare
+    {-# INLINE compare #-}
 
 showsPrecHostAndPortWith
     :: forall host port tag1 tag2
